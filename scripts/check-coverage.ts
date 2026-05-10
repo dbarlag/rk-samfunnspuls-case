@@ -56,7 +56,13 @@ async function main() {
 
   if (!muns || !allBranches || !besokFull) throw new Error("missing data");
 
-  const cov = computeCoverage(muns, allBranches, besokFull);
+  const { ACTIVITY_CONFIGS } = await import("../lib/activities");
+  const cov = computeCoverage(
+    muns,
+    allBranches,
+    besokFull,
+    ACTIVITY_CONFIGS.besokstjeneste,
+  );
   const utenDekning = cov.filter((c) => c.no_coverage).length;
   console.log(`\nVia computeCoverage: ${utenDekning} av ${cov.length} uten dekning`);
 

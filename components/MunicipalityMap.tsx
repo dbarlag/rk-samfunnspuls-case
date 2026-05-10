@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Tag } from "rk-designsystem";
 
+import type { ActivityConfig } from "@/lib/activities";
 import type { CoverageRow } from "@/lib/coverage";
 
 export type KommunePath = { knr: string; name: string; d: string };
@@ -12,17 +13,15 @@ export type KommunePath = { knr: string; name: string; d: string };
 type Props = {
   paths: KommunePath[];
   coverage: CoverageRow[];
+  config: ActivityConfig;
   viewBoxWidth: number;
   viewBoxHeight: number;
 };
 
-/**
- * Interaktivt SVG-kart over Norges kommuner.
- * Hover/fokus på en kommune oppdaterer side-panelet med detaljer.
- */
 export function MunicipalityMap({
   paths,
   coverage,
+  config,
   viewBoxWidth,
   viewBoxHeight,
 }: Props) {
@@ -71,7 +70,7 @@ export function MunicipalityMap({
           width="100%"
           style={{ height: "auto", display: "block" }}
           role="img"
-          aria-label="Kart over Norge med kommuner farget etter dekningsgap for besøkstjenesten"
+          aria-label={`Kart over Norge med kommuner farget etter dekningsgap for ${config.label}`}
           onMouseLeave={() => setHovered(null)}
         >
           <g>
@@ -87,7 +86,7 @@ export function MunicipalityMap({
                   strokeWidth={isHovered ? 1.5 : 0.4}
                   tabIndex={0}
                   role="link"
-                  aria-label={`${ariaLabel(name, cov)}. Klikk for detaljer.`}
+                  aria-label={`${ariaLabel(name, cov, config)}. Klikk for detaljer.`}
                   onMouseEnter={() => setHovered(knr)}
                   onFocus={() => setHovered(knr)}
                   onBlur={() => setHovered(null)}
@@ -107,27 +106,34 @@ export function MunicipalityMap({
             })}
           </g>
         </svg>
-        <MapLegend />
+        <MapLegend label={config.label} />
       </div>
 
-      <HoverPanel name={hoveredName} cov={hoveredCov} />
+      <HoverPanel name={hoveredName} cov={hoveredCov} config={config} />
     </div>
   );
 }
 
-function ariaLabel(name: string, c: CoverageRow | undefined): string {
+function ariaLabel(
+  name: string,
+  c: CoverageRow | undefined,
+  config: ActivityConfig,
+): string {
   if (!c) return `${name}: ingen data`;
-  const eldre = c.antall_67plus_alene.toLocaleString("nb-NO");
-  if (c.no_coverage) return `${name}: ${eldre} eldre alene, ingen besøkstjeneste`;
-  return `${name}: ${eldre} eldre alene, ${c.antall_besokstjenester} besøkstjeneste${c.antall_besokstjenester !== 1 ? "r" : ""}`;
+  const need = c.needValue.toLocaleString("nb-NO");
+  if (c.no_coverage)
+    return `${name}: ${need} ${config.needLabel}, ingen ${config.label.toLowerCase()}`;
+  return `${name}: ${need} ${config.needLabel}, ${c.antall_grupper} ${config.label.toLowerCase()}-gruppe${c.antall_grupper !== 1 ? "r" : ""}`;
 }
 
 function HoverPanel({
   name,
   cov,
+  config,
 }: {
   name: string | null | undefined;
   cov: CoverageRow | null | undefined;
+  config: ActivityConfig;
 }) {
   return (
     <aside
@@ -176,22 +182,22 @@ function HoverPanel({
           </div>
 
           <Stat
-            label="Eldre som bor alene (67+)"
-            value={cov.antall_67plus_alene.toLocaleString("nb-NO")}
+            label={config.needLabelLong}
+            value={cov.needValue.toLocaleString("nb-NO")}
           />
 
           <div style={{ marginTop: "1rem" }}>
             {cov.no_coverage ? (
-              <Tag data-color="danger">Ingen besøkstjeneste</Tag>
+              <Tag data-color="danger">Ingen {config.label.toLowerCase()}</Tag>
             ) : (
               <>
                 <Stat
-                  label="Besøkstjeneste-grupper"
-                  value={cov.antall_besokstjenester.toString()}
+                  label={`${config.label}-grupper`}
+                  value={cov.antall_grupper.toString()}
                 />
                 <div style={{ marginTop: "0.5rem" }}>
                   <Stat
-                    label="Eldre per gruppe"
+                    label={`${config.needLabel} per gruppe`}
                     value={`≈ ${Math.round(cov.need_per_service ?? 0).toLocaleString("nb-NO")}`}
                   />
                 </div>
@@ -229,9 +235,9 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function MapLegend() {
+function MapLegend({ label }: { label: string }) {
   const items = [
-    { color: "#D7282F", label: "Ingen dekning" },
+    { color: "#D7282F", label: `Ingen ${label.toLowerCase()}` },
     { color: "#F4A1A4", label: "Mye behov per gruppe" },
     { color: "#FBDADA", label: "Moderat behov" },
     { color: "#FDEDEE", label: "God dekning" },

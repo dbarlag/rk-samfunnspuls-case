@@ -1,12 +1,10 @@
 import { notFound } from "next/navigation";
 
 import { KommuneDetail } from "@/components/KommuneDetail";
+import { ACTIVITY_KEYS, type ActivityKey } from "@/lib/activities";
+import type { CoverageRow } from "@/lib/coverage";
 import { getData } from "@/lib/data";
 
-/**
- * Pre-genererer alle 357 detaljsider ved `next build` (full SSG).
- * Hver kommunenummer fra municipalities-tabellen blir et statisk endpoint.
- */
 export async function generateStaticParams() {
   const { municipalities } = await getData();
   return municipalities.map((m) => ({ knr: m.kommunenummer }));
@@ -18,13 +16,22 @@ export default async function KommunePage({
   params: Promise<{ knr: string }>;
 }) {
   const { knr } = await params;
-  const { municipalities, branches, activities, coverage } = await getData();
+  const { municipalities, branches, activities, coverageByActivity } =
+    await getData();
 
   const kommune = municipalities.find((m) => m.kommunenummer === knr);
-  const cov = coverage.find((c) => c.kommunenummer === knr);
-  if (!kommune || !cov) notFound();
+  if (!kommune) notFound();
 
-  // Lokalforeninger + distrikter i denne kommunen, med deres aktiviteter
+  // Plukk ut coverage-rad for denne kommunen for hver aktivitet
+  const kommuneCoverage = {} as Record<ActivityKey, CoverageRow>;
+  for (const key of ACTIVITY_KEYS) {
+    const row = coverageByActivity[key].find(
+      (c) => c.kommunenummer === knr,
+    );
+    if (!row) notFound();
+    kommuneCoverage[key] = row;
+  }
+
   const kommuneBranches = branches
     .filter((b) => b.kommunenummer === knr)
     .map((branch) => ({
@@ -42,7 +49,7 @@ export default async function KommunePage({
   return (
     <KommuneDetail
       kommune={kommune}
-      coverage={cov}
+      coverageByActivity={kommuneCoverage}
       branches={kommuneBranches}
     />
   );

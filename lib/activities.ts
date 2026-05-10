@@ -2,6 +2,8 @@
 // Strenger med æ/ø/å er typo-felle hvis de gjentas overalt i kodebasen —
 // importer herfra istedenfor å skrive dem inline.
 
+import type { Municipality } from "./database.types";
+
 export const ACTIVITIES = {
   BESOKSTJENESTE: "Besøkstjeneste",
   BESOKSVENN_MED_HUND: "Besøksvenn med hund",
@@ -16,3 +18,53 @@ export const ACTIVITIES = {
 } as const;
 
 export type ActivityName = (typeof ACTIVITIES)[keyof typeof ACTIVITIES];
+
+// ---- Multi-aktivitet config ----------------------------------------
+//
+// For dashboard-toggle: hver aktivitet har en "behov-metrikk" som er
+// den befolkningen den retter seg mot. Coverage-beregningen bruker
+// `needAccessor` for å hente riktig tall fra Municipality.
+
+export type ActivityKey = "besokstjeneste" | "leksehjelp" | "norsktrening";
+
+export type ActivityConfig = {
+  key: ActivityKey;
+  activityName: ActivityName; // brukt for å filtrere branch_activities
+  label: string; // visningsnavn
+  needLabel: string; // kort label på y-aksen, f.eks. "eldre alene"
+  needLabelLong: string; // lengre label, f.eks. "67+ som bor alene"
+  needSource: string; // "SSB tabell 06844" osv.
+  needAccessor: (m: Municipality) => number;
+};
+
+export const ACTIVITY_CONFIGS: Record<ActivityKey, ActivityConfig> = {
+  besokstjeneste: {
+    key: "besokstjeneste",
+    activityName: ACTIVITIES.BESOKSTJENESTE,
+    label: "Besøkstjeneste",
+    needLabel: "eldre alene",
+    needLabelLong: "Personer 67+ som bor alene",
+    needSource: "SSB tabell 06844",
+    needAccessor: (m) => m.antall_67plus_alene,
+  },
+  leksehjelp: {
+    key: "leksehjelp",
+    activityName: ACTIVITIES.LEKSEHJELP,
+    label: "Leksehjelp",
+    needLabel: "barn 6-16",
+    needLabelLong: "Barn i grunnskolealder (6-16 år)",
+    needSource: "SSB tabell 07459",
+    needAccessor: (m) => m.antall_barn_6_16 ?? 0,
+  },
+  norsktrening: {
+    key: "norsktrening",
+    activityName: ACTIVITIES.NORSKTRENING,
+    label: "Norsktrening",
+    needLabel: "innvandrere",
+    needLabelLong: "Innvandrere bosatt i kommunen",
+    needSource: "SSB tabell 09817",
+    needAccessor: (m) => m.antall_innvandrere ?? 0,
+  },
+};
+
+export const ACTIVITY_KEYS = Object.keys(ACTIVITY_CONFIGS) as ActivityKey[];

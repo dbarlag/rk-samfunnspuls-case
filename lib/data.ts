@@ -1,4 +1,8 @@
-import { ACTIVITIES } from "./activities";
+import {
+  ACTIVITY_CONFIGS,
+  ACTIVITY_KEYS,
+  type ActivityKey,
+} from "./activities";
 import { computeCoverage, type CoverageRow } from "./coverage";
 import type { Branch, BranchActivity, Municipality } from "./database.types";
 import { createAdminClient } from "./supabase";
@@ -6,21 +10,15 @@ import { createAdminClient } from "./supabase";
 type LoadedData = {
   municipalities: Municipality[];
   branches: Branch[];
-  activities: BranchActivity[]; // ALLE aktiviteter, ikke bare Besøkstjeneste
-  coverage: CoverageRow[];
+  activities: BranchActivity[];
+  // Pre-beregnet coverage per aktivitet — UI bytter bare nøkkel ved toggle.
+  coverageByActivity: Record<ActivityKey, CoverageRow[]>;
 };
 
-// Module-level cache. Persisterer for hele build-prosessen, så `next build`
-// gjør kun ÉN runde mot Supabase selv om alle 357 detaljsider kaller getData().
 let cached: LoadedData | null = null;
 
-const PAGE_SIZE = 1000; // Supabase REST-API har en hard 1000-rad-grense per request
+const PAGE_SIZE = 1000;
 
-/**
- * Henter ALLE rader fra en Supabase-tabell ved å pagere i bolker av 1000.
- * Trengs fordi PostgREST har default (og hard) max 1000 rader per request,
- * og branch_activities har ~2131 rader.
- */
 async function fetchAll<T extends "municipalities" | "red_cross_branches" | "branch_activities">(
   supabase: ReturnType<typeof createAdminClient>,
   table: T,
@@ -40,8 +38,6 @@ async function fetchAll<T extends "municipalities" | "red_cross_branches" | "bra
 }
 
 async function loadAll(): Promise<LoadedData> {
-  // Service-role + pagination kjøres kun fra RSC ved build-time. Service-role-key
-  // forblir server-side, sendes aldri til klient.
   const supabase = createAdminClient();
 
   const [muns, branches, acts] = await Promise.all([
@@ -50,24 +46,25 @@ async function loadAll(): Promise<LoadedData> {
     fetchAll(supabase, "branch_activities") as Promise<BranchActivity[]>,
   ]);
 
-  // Coverage trenger kun Besøkstjeneste-aktivitetene; vi filtrerer i JS.
-  const besokActivities = acts.filter(
-    (a) => a.activity_name === ACTIVITIES.BESOKSTJENESTE,
-  );
-  const coverage = computeCoverage(muns, branches, besokActivities);
+  // Beregn coverage for hver aktivitet (Besøkstjeneste, Leksehjelp, Norsktrening)
+  const coverageByActivity = {} as Record<ActivityKey, CoverageRow[]>;
+  for (const key of ACTIVITY_KEYS) {
+    coverageByActivity[key] = computeCoverage(
+      muns,
+      branches,
+      acts,
+      ACTIVITY_CONFIGS[key],
+    );
+  }
 
   return {
     municipalities: muns,
     branches,
     activities: acts,
-    coverage,
+    coverageByActivity,
   };
 }
 
-/**
- * Hent alle data + ferdig-beregnet coverage. Kalles av RSC og API-route.
- * Resultatet caches på modul-nivå for hele build-prosessen.
- */
 export async function getData(): Promise<LoadedData> {
   if (!cached) cached = await loadAll();
   return cached;

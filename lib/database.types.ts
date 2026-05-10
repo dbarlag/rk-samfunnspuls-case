@@ -18,7 +18,23 @@ export type Municipality = {
   updated_at: string;
 };
 
-export type MunicipalityInsert = Omit<Municipality, "antall_67plus_alene" | "updated_at">;
+// Insert-type for municipalities. Alle ikke-PK / ikke-NOT-NULL felt er
+// optional, slik at en ingest-script kan upserte sparse rader (f.eks.
+// ingest-ssb populerer alders-tall, ingest-ssb-extra populerer barn 6-16
+// og innvandrere).
+export type MunicipalityInsert = {
+  kommunenummer: string;
+  kommunenavn: string;
+  kommunenavn_normalized: string;
+  fylkesnummer?: string | null;
+  fylkesnavn?: string | null;
+  antall_67_79_alene?: number | null;
+  antall_80plus_alene?: number | null;
+  antall_barn_6_16?: number | null;
+  antall_innvandrere?: number | null;
+  total_befolkning?: number | null;
+  data_year?: number | null;
+};
 
 export type Branch = {
   branch_id: string;

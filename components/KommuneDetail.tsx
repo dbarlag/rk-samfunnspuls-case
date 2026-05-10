@@ -3,23 +3,28 @@
 import Link from "next/link";
 import { Card, Heading, Tag } from "rk-designsystem";
 
+import {
+  ACTIVITY_CONFIGS,
+  ACTIVITY_KEYS,
+  type ActivityKey,
+} from "@/lib/activities";
 import type { CoverageRow } from "@/lib/coverage";
 import type { Branch, Municipality } from "@/lib/database.types";
 
 type Props = {
   kommune: Municipality;
-  coverage: CoverageRow;
+  coverageByActivity: Record<ActivityKey, CoverageRow>;
   branches: Array<{
     branch: Branch;
     activities: string[];
   }>;
 };
 
-export function KommuneDetail({ kommune, coverage, branches }: Props) {
-  const totalActivities = new Set(
-    branches.flatMap((b) => b.activities),
-  );
-
+export function KommuneDetail({
+  kommune,
+  coverageByActivity,
+  branches,
+}: Props) {
   return (
     <main
       style={{
@@ -60,10 +65,10 @@ export function KommuneDetail({ kommune, coverage, branches }: Props) {
         <Heading level={1}>{kommune.kommunenavn}</Heading>
       </header>
 
-      {/* Befolkningsstats */}
+      {/* Behov-tall per metrikk */}
       <section style={{ marginBottom: "2.5rem" }}>
         <div style={{ marginBottom: "1rem" }}>
-          <Heading level={2}>Befolkning som bor alene (67+)</Heading>
+          <Heading level={2}>Befolkning og humanitære behov</Heading>
         </div>
         <div
           style={{
@@ -72,78 +77,46 @@ export function KommuneDetail({ kommune, coverage, branches }: Props) {
             gap: "1rem",
           }}
         >
-          <StatCard
-            label="Aldersgruppe 67–79"
-            value={(kommune.antall_67_79_alene ?? 0).toLocaleString("nb-NO")}
-          />
-          <StatCard
-            label="Aldersgruppe 80+"
-            value={(kommune.antall_80plus_alene ?? 0).toLocaleString("nb-NO")}
-          />
-          <StatCard
-            label="Total 67+ alene"
-            value={kommune.antall_67plus_alene.toLocaleString("nb-NO")}
-            highlight
-          />
+          {ACTIVITY_KEYS.map((key) => {
+            const cfg = ACTIVITY_CONFIGS[key];
+            const need = cfg.needAccessor(kommune);
+            return (
+              <StatCard
+                key={key}
+                label={cfg.needLabelLong}
+                value={need.toLocaleString("nb-NO")}
+                source={cfg.needSource}
+              />
+            );
+          })}
         </div>
-        <p style={{ marginTop: "0.75rem", color: "#777", fontSize: "0.875rem" }}>
-          Datakilde: SSB tabell 06844 ({kommune.data_year ?? "—"})
-        </p>
       </section>
 
-      {/* Coverage status */}
+      {/* Coverage status per aktivitet */}
       <section style={{ marginBottom: "2.5rem" }}>
         <div style={{ marginBottom: "1rem" }}>
-          <Heading level={2}>Besøkstjeneste-dekning</Heading>
+          <Heading level={2}>Røde Kors-dekning per aktivitet</Heading>
         </div>
-        <Card variant={coverage.no_coverage ? "tinted" : "default"}>
-          <Card.Block>
-            {coverage.no_coverage ? (
-              <div>
-                <Tag data-color="danger">Ingen besøkstjeneste</Tag>
-                <p style={{ marginTop: "0.75rem", color: "#555" }}>
-                  Ingen aktive Røde Kors-grupper tilbyr besøkstjeneste i denne
-                  kommunen i dag. {totalActivities.size > 0 && (
-                    <>
-                      Kommunen har imidlertid {branches.length} aktiv
-                      {branches.length !== 1 ? "e" : ""} lokalforening
-                      {branches.length !== 1 ? "er" : ""} med andre
-                      aktiviteter — utvidelses-potensial.
-                    </>
-                  )}
-                </p>
-              </div>
-            ) : (
-              <div
-                style={{
-                  display: "flex",
-                  gap: "2rem",
-                  alignItems: "baseline",
-                  flexWrap: "wrap",
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: "2rem", fontWeight: 700 }}>
-                    {coverage.antall_besokstjenester}
-                  </div>
-                  <div style={{ color: "#777", fontSize: "0.875rem" }}>
-                    grupper med besøkstjeneste
-                  </div>
-                </div>
-                <div>
-                  <div style={{ fontSize: "2rem", fontWeight: 700 }}>
-                    ≈ {Math.round(coverage.need_per_service ?? 0).toLocaleString(
-                      "nb-NO",
-                    )}
-                  </div>
-                  <div style={{ color: "#777", fontSize: "0.875rem" }}>
-                    eldre alene per gruppe
-                  </div>
-                </div>
-              </div>
-            )}
-          </Card.Block>
-        </Card>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(3, 1fr)",
+            gap: "1rem",
+          }}
+        >
+          {ACTIVITY_KEYS.map((key) => {
+            const cfg = ACTIVITY_CONFIGS[key];
+            const cov = coverageByActivity[key];
+            return (
+              <CoverageCard
+                key={key}
+                label={cfg.label}
+                needLabel={cfg.needLabel}
+                cov={cov}
+              />
+            );
+          })}
+        </div>
       </section>
 
       {/* Røde Kors-foreninger i kommunen */}
@@ -187,40 +160,94 @@ export function KommuneDetail({ kommune, coverage, branches }: Props) {
 function StatCard({
   label,
   value,
-  highlight,
+  source,
 }: {
   label: string;
   value: string;
-  highlight?: boolean;
+  source?: string;
 }) {
   return (
-    <Card variant={highlight ? "tinted" : "default"}>
+    <Card>
       <Card.Block>
         <div
           style={{
             fontSize: "0.75rem",
-            color: highlight
+            color: "#777",
+            fontWeight: 600,
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+            marginBottom: "0.5rem",
+            minHeight: "2.4rem",
+          }}
+        >
+          {label}
+        </div>
+        <div style={{ fontSize: "1.75rem", fontWeight: 700 }}>{value}</div>
+        {source && (
+          <div
+            style={{
+              marginTop: "0.5rem",
+              fontSize: "0.75rem",
+              color: "#999",
+            }}
+          >
+            Kilde: {source}
+          </div>
+        )}
+      </Card.Block>
+    </Card>
+  );
+}
+
+function CoverageCard({
+  label,
+  needLabel,
+  cov,
+}: {
+  label: string;
+  needLabel: string;
+  cov: CoverageRow;
+}) {
+  return (
+    <Card variant={cov.no_coverage ? "tinted" : "default"}>
+      <Card.Block>
+        <div
+          style={{
+            fontSize: "0.75rem",
+            color: cov.no_coverage
               ? "var(--ds-color-accent-base-default, #D7282F)"
               : "#777",
             fontWeight: 600,
             textTransform: "uppercase",
             letterSpacing: "0.05em",
-            marginBottom: "0.5rem",
+            marginBottom: "0.75rem",
           }}
         >
           {label}
         </div>
-        <div
-          style={{
-            fontSize: "1.75rem",
-            fontWeight: 700,
-            color: highlight
-              ? "var(--ds-color-accent-base-default, #D7282F)"
-              : "inherit",
-          }}
-        >
-          {value}
-        </div>
+        {cov.no_coverage ? (
+          <Tag data-color="danger">Ingen dekning</Tag>
+        ) : (
+          <>
+            <div style={{ fontSize: "1.75rem", fontWeight: 700 }}>
+              {cov.antall_grupper}
+            </div>
+            <div style={{ color: "#777", fontSize: "0.875rem" }}>
+              {cov.antall_grupper === 1 ? "gruppe" : "grupper"}
+            </div>
+            <div
+              style={{
+                marginTop: "0.75rem",
+                fontSize: "0.875rem",
+                color: "#555",
+              }}
+            >
+              ≈{" "}
+              {Math.round(cov.need_per_service ?? 0).toLocaleString("nb-NO")}{" "}
+              {needLabel} per gruppe
+            </div>
+          </>
+        )}
       </Card.Block>
     </Card>
   );
@@ -278,15 +305,18 @@ function BranchCard({
               Aktiviteter ({activities.length})
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: "0.4rem" }}>
-              {activities.map((a) => (
-                <Tag
-                  key={a}
-                  data-color={a === "Besøkstjeneste" ? "success" : "neutral"}
-                  variant="outline"
-                >
-                  {a}
-                </Tag>
-              ))}
+              {activities.map((a) => {
+                const isHighlighted = ["Besøkstjeneste", "Leksehjelp", "Norsktrening"].includes(a);
+                return (
+                  <Tag
+                    key={a}
+                    data-color={isHighlighted ? "success" : "neutral"}
+                    variant="outline"
+                  >
+                    {a}
+                  </Tag>
+                );
+              })}
             </div>
           </div>
         )}

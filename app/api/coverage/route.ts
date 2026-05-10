@@ -1,35 +1,41 @@
 import { type NextRequest } from "next/server";
 
+import { ACTIVITY_KEYS, type ActivityKey } from "@/lib/activities";
 import { getData } from "@/lib/data";
 
 /**
  * GET /api/coverage
  *
- * Eksponerer dekningsgap-listen som et JSON-API. Oppfyller oppgavens krav om
- * "API som server data" mellom database og frontend.
+ * Eksponerer dekningsgap-listen som et JSON-API.
  *
  * Query params:
- *   - fylke=<navn>          filter på fylkesnavn (eks. ?fylke=Akershus)
- *   - only_undekket=true    kun kommuner uten besøkstjeneste
- *   - limit=<n>             antall rader (default alle 357)
- *
- * Response:
- *   {
- *     "data":  [ { kommunenummer, kommunenavn, fylkesnavn,
- *                  antall_67plus_alene, antall_besokstjenester,
- *                  no_coverage, need_per_service }, ... ],
- *     "meta":  { count, data_year, fetched_at }
- *   }
+ *   - activity=<key>         besokstjeneste | leksehjelp | norsktrening
+ *                            (default: besokstjeneste)
+ *   - fylke=<navn>           filter på fylkesnavn
+ *   - only_undekket=true     kun kommuner uten dekning for valgt aktivitet
+ *   - limit=<n>              antall rader (default alle)
  */
 export async function GET(req: NextRequest) {
-  const { coverage } = await getData();
-
   const { searchParams } = req.nextUrl;
+  const activityParam = (searchParams.get("activity") ??
+    "besokstjeneste") as ActivityKey;
+
+  if (!ACTIVITY_KEYS.includes(activityParam)) {
+    return Response.json(
+      {
+        error: `Invalid activity. Must be one of: ${ACTIVITY_KEYS.join(", ")}`,
+      },
+      { status: 400 },
+    );
+  }
+
+  const { coverageByActivity } = await getData();
+  let rows = coverageByActivity[activityParam];
+
   const fylke = searchParams.get("fylke");
   const onlyUndekket = searchParams.get("only_undekket") === "true";
-  const limit = Number(searchParams.get("limit")) || coverage.length;
+  const limit = Number(searchParams.get("limit")) || rows.length;
 
-  let rows = coverage;
   if (fylke) {
     const f = fylke.toLowerCase().trim();
     rows = rows.filter((r) => r.fylkesnavn?.toLowerCase() === f);
@@ -43,14 +49,14 @@ export async function GET(req: NextRequest) {
     {
       data: rows,
       meta: {
+        activity: activityParam,
         count: rows.length,
-        data_year: 2025,
+        data_year: 2026,
         fetched_at: new Date().toISOString(),
       },
     },
     {
       headers: {
-        // Cache i 1 time ved CDN, revalidate ved bygg
         "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
       },
     },
