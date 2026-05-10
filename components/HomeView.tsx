@@ -22,7 +22,7 @@ export function HomeView({
   return (
     <main
       style={{
-        maxWidth: 1200,
+        maxWidth: 1300,
         margin: "0 auto",
         padding: "2rem 1.5rem 4rem",
       }}
@@ -66,121 +66,75 @@ export function HomeView({
         />
       </section>
 
-      <section
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1.5fr)",
-          gap: "2rem",
-          alignItems: "start",
-        }}
-      >
-        <div>
-          <div style={{ marginBottom: "1rem" }}>
-            <Heading level={2}>Norgeskart</Heading>
-          </div>
-          <div
-            style={{
-              padding: "1rem",
-              background: "#fafafa",
-              border: "1px solid #e5e5e5",
-              borderRadius: 8,
-            }}
-          >
-            {map}
-            <MapLegend />
-          </div>
+      <section style={{ marginBottom: "3rem" }}>
+        <div style={{ marginBottom: "1rem" }}>
+          <Heading level={2}>Norgeskart — interaktivt</Heading>
         </div>
-
-        <div>
-          <div style={{ marginBottom: "1rem" }}>
-            <Heading level={2}>Topp 10 — størst dekningsgap</Heading>
-          </div>
-          <Table zebra hover border>
-            <Table.Head>
-              <Table.Row>
-                <Table.HeaderCell style={{ width: "3rem" }}>#</Table.HeaderCell>
-                <Table.HeaderCell>Kommune</Table.HeaderCell>
-                <Table.HeaderCell style={{ textAlign: "right" }}>
-                  Eldre alene (67+)
-                </Table.HeaderCell>
-                <Table.HeaderCell>Dekning</Table.HeaderCell>
-              </Table.Row>
-            </Table.Head>
-            <Table.Body>
-              {top10.map((row, i) => (
-                <Table.Row key={row.kommunenummer}>
-                  <Table.Cell style={{ color: "#888", fontWeight: 600 }}>
-                    {i + 1}
-                  </Table.Cell>
-                  <Table.Cell>
-                    <div style={{ fontWeight: 600 }}>{row.kommunenavn}</div>
-                    <div style={{ color: "#777", fontSize: "0.875rem" }}>
-                      {row.fylkesnavn}
-                    </div>
-                  </Table.Cell>
-                  <Table.Cell style={{ textAlign: "right" }}>
-                    {row.antall_67plus_alene.toLocaleString("nb-NO")}
-                  </Table.Cell>
-                  <Table.Cell>
-                    {row.no_coverage ? (
-                      <Tag data-color="danger">Ingen dekning</Tag>
-                    ) : (
-                      <span style={{ fontSize: "0.875rem", color: "#555" }}>
-                        {row.antall_besokstjenester} gruppe
-                        {row.antall_besokstjenester !== 1 ? "r" : ""}{" "}
-                        <span style={{ color: "#888" }}>
-                          · ≈{Math.round(row.need_per_service ?? 0)} per gruppe
-                        </span>
-                      </span>
-                    )}
-                  </Table.Cell>
-                </Table.Row>
-              ))}
-            </Table.Body>
-          </Table>
+        <p style={{ color: "#777", marginBottom: "1.5rem" }}>
+          Hold over en kommune for å se detaljer, eller bruk Tab for å
+          navigere med tastatur.
+        </p>
+        <div
+          style={{
+            padding: "1.5rem",
+            background: "#fafafa",
+            border: "1px solid #e5e5e5",
+            borderRadius: 8,
+          }}
+        >
+          {map}
         </div>
       </section>
-    </main>
-  );
-}
 
-function MapLegend() {
-  const items = [
-    { color: "#D7282F", label: "Ingen dekning" },
-    { color: "#F4A1A4", label: "Mye behov per gruppe" },
-    { color: "#FBDADA", label: "Moderat behov" },
-    { color: "#FDEDEE", label: "God dekning" },
-  ];
-  return (
-    <div
-      style={{
-        marginTop: "1rem",
-        display: "flex",
-        flexWrap: "wrap",
-        gap: "0.75rem",
-        fontSize: "0.8125rem",
-        color: "#555",
-      }}
-    >
-      {items.map((it) => (
-        <div
-          key={it.label}
-          style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}
-        >
-          <span
-            style={{
-              width: 14,
-              height: 14,
-              background: it.color,
-              border: "1px solid #ccc",
-              display: "inline-block",
-              borderRadius: 2,
-            }}
-          />
-          {it.label}
+      <section>
+        <div style={{ marginBottom: "1rem" }}>
+          <Heading level={2}>Topp 10 — størst dekningsgap</Heading>
         </div>
-      ))}
-    </div>
+        <Table zebra hover border>
+          <Table.Head>
+            <Table.Row>
+              <Table.HeaderCell style={{ width: "3rem" }}>#</Table.HeaderCell>
+              <Table.HeaderCell>Kommune</Table.HeaderCell>
+              <Table.HeaderCell style={{ textAlign: "right" }}>
+                Eldre alene (67+)
+              </Table.HeaderCell>
+              <Table.HeaderCell>Dekning</Table.HeaderCell>
+            </Table.Row>
+          </Table.Head>
+          <Table.Body>
+            {top10.map((row, i) => (
+              <Table.Row key={row.kommunenummer}>
+                <Table.Cell style={{ color: "#888", fontWeight: 600 }}>
+                  {i + 1}
+                </Table.Cell>
+                <Table.Cell>
+                  <div style={{ fontWeight: 600 }}>{row.kommunenavn}</div>
+                  <div style={{ color: "#777", fontSize: "0.875rem" }}>
+                    {row.fylkesnavn}
+                  </div>
+                </Table.Cell>
+                <Table.Cell style={{ textAlign: "right" }}>
+                  {row.antall_67plus_alene.toLocaleString("nb-NO")}
+                </Table.Cell>
+                <Table.Cell>
+                  {row.no_coverage ? (
+                    <Tag data-color="danger">Ingen dekning</Tag>
+                  ) : (
+                    <span style={{ fontSize: "0.875rem", color: "#555" }}>
+                      {row.antall_besokstjenester} gruppe
+                      {row.antall_besokstjenester !== 1 ? "r" : ""}{" "}
+                      <span style={{ color: "#888" }}>
+                        · ≈{Math.round(row.need_per_service ?? 0)} per gruppe
+                      </span>
+                    </span>
+                  )}
+                </Table.Cell>
+              </Table.Row>
+            ))}
+          </Table.Body>
+        </Table>
+      </section>
+    </main>
   );
 }
 

@@ -1,72 +1,245 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { Tag } from "rk-designsystem";
+
 import type { CoverageRow } from "@/lib/coverage";
-import { getKommunePaths, MAP_HEIGHT, MAP_WIDTH } from "@/lib/geo";
+
+export type KommunePath = { knr: string; name: string; d: string };
 
 type Props = {
+  paths: KommunePath[];
   coverage: CoverageRow[];
+  viewBoxWidth: number;
+  viewBoxHeight: number;
 };
 
 /**
- * Server-rendret SVG-kart over Norges kommuner.
- *
- * Farger basert på dekning:
- *   - no_coverage  → mørk rød (kritisk gap)
- *   - high need    → lys rød
- *   - low need     → svært lys rød / off-white
- *
- * All interaktivitet (hover, fokus) er CSS-only — ingen klient-JS nødvendig.
+ * Interaktivt SVG-kart over Norges kommuner.
+ * Hover/fokus på en kommune oppdaterer side-panelet med detaljer.
  */
-export function MunicipalityMap({ coverage }: Props) {
-  const paths = getKommunePaths();
-  const coverageByKnr = new Map(coverage.map((c) => [c.kommunenummer, c]));
+export function MunicipalityMap({
+  paths,
+  coverage,
+  viewBoxWidth,
+  viewBoxHeight,
+}: Props) {
+  const [hovered, setHovered] = useState<string | null>(null);
 
-  // Beregn need-bånd for fargeskala (eks. quintile av need_per_service blant dekkede)
-  const dekkedeNeeds = coverage
-    .filter((c) => c.need_per_service !== null)
-    .map((c) => c.need_per_service as number)
-    .sort((a, b) => a - b);
-  const p33 = dekkedeNeeds[Math.floor(dekkedeNeeds.length * 0.33)] ?? 0;
-  const p66 = dekkedeNeeds[Math.floor(dekkedeNeeds.length * 0.66)] ?? 0;
+  const coverageByKnr = useMemo(
+    () => new Map(coverage.map((c) => [c.kommunenummer, c])),
+    [coverage],
+  );
+
+  const { p33, p66 } = useMemo(() => {
+    const dekkedeNeeds = coverage
+      .filter((c) => c.need_per_service !== null)
+      .map((c) => c.need_per_service as number)
+      .sort((a, b) => a - b);
+    return {
+      p33: dekkedeNeeds[Math.floor(dekkedeNeeds.length * 0.33)] ?? 0,
+      p66: dekkedeNeeds[Math.floor(dekkedeNeeds.length * 0.66)] ?? 0,
+    };
+  }, [coverage]);
 
   function colorFor(c: CoverageRow | undefined): string {
-    if (!c) return "#f5f5f5"; // ingen data
-    if (c.no_coverage) return "#D7282F"; // RK rød — kritisk
-    if ((c.need_per_service ?? 0) >= p66) return "#F4A1A4"; // mye behov per gruppe
-    if ((c.need_per_service ?? 0) >= p33) return "#FBDADA"; // moderat
-    return "#FDEDEE"; // god dekning
+    if (!c) return "#f5f5f5";
+    if (c.no_coverage) return "#D7282F";
+    if ((c.need_per_service ?? 0) >= p66) return "#F4A1A4";
+    if ((c.need_per_service ?? 0) >= p33) return "#FBDADA";
+    return "#FDEDEE";
   }
 
+  const hoveredCov = hovered ? coverageByKnr.get(hovered) : null;
+  const hoveredName = hovered ? paths.find((p) => p.knr === hovered)?.name : null;
+
   return (
-    <svg
-      viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`}
-      width="100%"
-      style={{ height: "auto", display: "block" }}
-      role="img"
-      aria-label="Kart over Norge med kommuner farget etter dekningsgap for besøkstjenesten"
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "minmax(0, 1fr) 280px",
+        gap: "1.5rem",
+        alignItems: "start",
+      }}
     >
-      <g>
-        {Array.from(paths.entries()).map(([knr, { name, d }]) => {
-          const cov = coverageByKnr.get(knr);
-          const status = cov?.no_coverage
-            ? "ingen besøkstjeneste"
-            : cov
-              ? `${cov.antall_besokstjenester} besøkstjeneste${cov.antall_besokstjenester !== 1 ? "r" : ""}`
-              : "ingen data";
-          const eldre = cov ? cov.antall_67plus_alene.toLocaleString("nb-NO") : "?";
-          return (
-            <path
-              key={knr}
-              d={d}
-              fill={colorFor(cov)}
-              stroke="#fff"
-              strokeWidth="0.5"
-              tabIndex={0}
-              aria-label={`${name}: ${eldre} eldre alene, ${status}`}
-            >
-              <title>{`${name} — ${eldre} eldre alene, ${status}`}</title>
-            </path>
-          );
-        })}
-      </g>
-    </svg>
+      <div>
+        <svg
+          viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`}
+          width="100%"
+          style={{ height: "auto", display: "block" }}
+          role="img"
+          aria-label="Kart over Norge med kommuner farget etter dekningsgap for besøkstjenesten"
+          onMouseLeave={() => setHovered(null)}
+        >
+          <g>
+            {paths.map(({ knr, name, d }) => {
+              const cov = coverageByKnr.get(knr);
+              const isHovered = hovered === knr;
+              return (
+                <path
+                  key={knr}
+                  d={d}
+                  fill={colorFor(cov)}
+                  stroke={isHovered ? "#171717" : "#fff"}
+                  strokeWidth={isHovered ? 1.5 : 0.4}
+                  tabIndex={0}
+                  aria-label={ariaLabel(name, cov)}
+                  onMouseEnter={() => setHovered(knr)}
+                  onFocus={() => setHovered(knr)}
+                  onBlur={() => setHovered(null)}
+                  style={{
+                    cursor: "pointer",
+                    outline: "none",
+                  }}
+                />
+              );
+            })}
+          </g>
+        </svg>
+        <MapLegend />
+      </div>
+
+      <HoverPanel name={hoveredName} cov={hoveredCov} />
+    </div>
+  );
+}
+
+function ariaLabel(name: string, c: CoverageRow | undefined): string {
+  if (!c) return `${name}: ingen data`;
+  const eldre = c.antall_67plus_alene.toLocaleString("nb-NO");
+  if (c.no_coverage) return `${name}: ${eldre} eldre alene, ingen besøkstjeneste`;
+  return `${name}: ${eldre} eldre alene, ${c.antall_besokstjenester} besøkstjeneste${c.antall_besokstjenester !== 1 ? "r" : ""}`;
+}
+
+function HoverPanel({
+  name,
+  cov,
+}: {
+  name: string | null | undefined;
+  cov: CoverageRow | null | undefined;
+}) {
+  return (
+    <aside
+      style={{
+        position: "sticky",
+        top: "1rem",
+        padding: "1.25rem",
+        background: "#fff",
+        border: "1px solid #e5e5e5",
+        borderRadius: 8,
+        minHeight: 280,
+      }}
+      aria-live="polite"
+    >
+      {!name || !cov ? (
+        <div style={{ color: "#999", fontSize: "0.95rem", lineHeight: 1.5 }}>
+          <div style={{ marginBottom: "0.5rem", fontWeight: 600, color: "#555" }}>
+            Velg en kommune
+          </div>
+          Hold musa over kartet, eller tab deg gjennom kommunene med tastatur,
+          for å se detaljer.
+        </div>
+      ) : (
+        <>
+          <div
+            style={{
+              fontSize: "0.75rem",
+              color: "#777",
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: "0.05em",
+              marginBottom: "0.25rem",
+            }}
+          >
+            {cov.fylkesnavn}
+          </div>
+          <div
+            style={{
+              fontSize: "1.5rem",
+              fontWeight: 700,
+              marginBottom: "1rem",
+              lineHeight: 1.2,
+            }}
+          >
+            {name}
+          </div>
+
+          <Stat
+            label="Eldre som bor alene (67+)"
+            value={cov.antall_67plus_alene.toLocaleString("nb-NO")}
+          />
+
+          <div style={{ marginTop: "1rem" }}>
+            {cov.no_coverage ? (
+              <Tag data-color="danger">Ingen besøkstjeneste</Tag>
+            ) : (
+              <>
+                <Stat
+                  label="Besøkstjeneste-grupper"
+                  value={cov.antall_besokstjenester.toString()}
+                />
+                <div style={{ marginTop: "0.5rem" }}>
+                  <Stat
+                    label="Eldre per gruppe"
+                    value={`≈ ${Math.round(cov.need_per_service ?? 0).toLocaleString("nb-NO")}`}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        </>
+      )}
+    </aside>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div style={{ fontSize: "0.75rem", color: "#777", fontWeight: 500 }}>
+        {label}
+      </div>
+      <div style={{ fontSize: "1.25rem", fontWeight: 600 }}>{value}</div>
+    </div>
+  );
+}
+
+function MapLegend() {
+  const items = [
+    { color: "#D7282F", label: "Ingen dekning" },
+    { color: "#F4A1A4", label: "Mye behov per gruppe" },
+    { color: "#FBDADA", label: "Moderat behov" },
+    { color: "#FDEDEE", label: "God dekning" },
+  ];
+  return (
+    <div
+      style={{
+        marginTop: "1rem",
+        display: "flex",
+        flexWrap: "wrap",
+        gap: "0.75rem",
+        fontSize: "0.8125rem",
+        color: "#555",
+      }}
+    >
+      {items.map((it) => (
+        <div
+          key={it.label}
+          style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}
+        >
+          <span
+            style={{
+              width: 14,
+              height: 14,
+              background: it.color,
+              border: "1px solid #ccc",
+              display: "inline-block",
+              borderRadius: 2,
+            }}
+          />
+          {it.label}
+        </div>
+      ))}
+    </div>
   );
 }
