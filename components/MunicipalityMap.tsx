@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { Tag } from "rk-designsystem";
 
@@ -24,6 +26,7 @@ export function MunicipalityMap({
   viewBoxWidth,
   viewBoxHeight,
 }: Props) {
+  const router = useRouter();
   const [hovered, setHovered] = useState<string | null>(null);
 
   const coverageByKnr = useMemo(
@@ -83,10 +86,18 @@ export function MunicipalityMap({
                   stroke={isHovered ? "#171717" : "#fff"}
                   strokeWidth={isHovered ? 1.5 : 0.4}
                   tabIndex={0}
-                  aria-label={ariaLabel(name, cov)}
+                  role="link"
+                  aria-label={`${ariaLabel(name, cov)}. Klikk for detaljer.`}
                   onMouseEnter={() => setHovered(knr)}
                   onFocus={() => setHovered(knr)}
                   onBlur={() => setHovered(null)}
+                  onClick={() => router.push(`/kommune/${knr}`)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      router.push(`/kommune/${knr}`);
+                    }
+                  }}
                   style={{
                     cursor: "pointer",
                     outline: "none",
@@ -187,6 +198,20 @@ function HoverPanel({
               </>
             )}
           </div>
+
+          <Link
+            href={`/kommune/${cov.kommunenummer}`}
+            style={{
+              display: "inline-block",
+              marginTop: "1.25rem",
+              color: "var(--ds-color-accent-base-default, #D7282F)",
+              fontWeight: 600,
+              textDecoration: "none",
+              fontSize: "0.95rem",
+            }}
+          >
+            Se detaljer →
+          </Link>
         </>
       )}
     </aside>

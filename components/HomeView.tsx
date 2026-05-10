@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import type { ReactNode } from "react";
 import { Card, Heading, Table, Tag } from "rk-designsystem";
 
@@ -108,10 +109,26 @@ export function HomeView({
                   {i + 1}
                 </Table.Cell>
                 <Table.Cell>
-                  <div style={{ fontWeight: 600 }}>{row.kommunenavn}</div>
-                  <div style={{ color: "#777", fontSize: "0.875rem" }}>
-                    {row.fylkesnavn}
-                  </div>
+                  <Link
+                    href={`/kommune/${row.kommunenummer}`}
+                    style={{
+                      color: "inherit",
+                      textDecoration: "none",
+                      display: "block",
+                    }}
+                  >
+                    <div
+                      style={{
+                        fontWeight: 600,
+                        color: "var(--ds-color-accent-base-default, #D7282F)",
+                      }}
+                    >
+                      {row.kommunenavn} →
+                    </div>
+                    <div style={{ color: "#777", fontSize: "0.875rem" }}>
+                      {row.fylkesnavn}
+                    </div>
+                  </Link>
                 </Table.Cell>
                 <Table.Cell style={{ textAlign: "right" }}>
                   {row.antall_67plus_alene.toLocaleString("nb-NO")}
