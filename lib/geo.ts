@@ -9,9 +9,25 @@ const BOUNDS = {
   maxLat: 71.5,
 };
 
-// SVG viewBox-dimensjoner. Aspect velges for å gi Norge en sånn-passe naturlig form.
+const DEG_TO_RAD = Math.PI / 180;
+
+// Mercator y-koordinat for gitt breddegrad (i grader).
+function mercY(latDeg: number): number {
+  return Math.log(Math.tan(Math.PI / 4 + (latDeg * DEG_TO_RAD) / 2));
+}
+
+// Pre-beregnede bounds i mercator-rom (radians for lng, mercY for lat).
+const MIN_LNG_RAD = BOUNDS.minLng * DEG_TO_RAD;
+const MAX_LNG_RAD = BOUNDS.maxLng * DEG_TO_RAD;
+const MIN_MERC_Y = mercY(BOUNDS.minLat);
+const MAX_MERC_Y = mercY(BOUNDS.maxLat);
+
+// SVG viewBox: bredde fast, høyde regnet ut fra Mercator-aspekten av bounds.
+// Det gir Norge naturlig form (ikke tøyd / skviset).
 export const MAP_WIDTH = 500;
-export const MAP_HEIGHT = 700;
+export const MAP_HEIGHT = Math.round(
+  (MAP_WIDTH * (MAX_MERC_Y - MIN_MERC_Y)) / (MAX_LNG_RAD - MIN_LNG_RAD),
+);
 
 type RingCoords = number[][];
 type PolygonCoords = RingCoords[];
@@ -26,11 +42,12 @@ type GeoFeature = {
 
 function project(lng: number, lat: number): [number, number] {
   const x =
-    ((lng - BOUNDS.minLng) / (BOUNDS.maxLng - BOUNDS.minLng)) * MAP_WIDTH;
-  // Inverter Y siden SVG har y=0 øverst, lat=71 (nord) skal være øverst
+    ((lng * DEG_TO_RAD - MIN_LNG_RAD) / (MAX_LNG_RAD - MIN_LNG_RAD)) *
+    MAP_WIDTH;
+  // SVG har y=0 øverst, lat=71 (nord) skal være øverst → invertér.
   const y =
     MAP_HEIGHT -
-    ((lat - BOUNDS.minLat) / (BOUNDS.maxLat - BOUNDS.minLat)) * MAP_HEIGHT;
+    ((mercY(lat) - MIN_MERC_Y) / (MAX_MERC_Y - MIN_MERC_Y)) * MAP_HEIGHT;
   return [x, y];
 }
 
