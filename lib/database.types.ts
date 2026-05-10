@@ -11,6 +11,9 @@ export type Municipality = {
   antall_80plus_alene: number | null;
   antall_67plus_alene: number; // GENERATED
   total_befolkning: number | null;
+  // Multi-aktivitet behov-metrikker (kommer fra ekstra ETL):
+  antall_barn_6_16: number | null;       // SSB 07459 sum 6-16 (Leksehjelp-behov)
+  antall_innvandrere: number | null;      // SSB 09817 (Norsktrening-behov)
   data_year: number | null;
   updated_at: string;
 };

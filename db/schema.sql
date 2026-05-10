@@ -28,6 +28,13 @@ CREATE INDEX IF NOT EXISTS idx_municipalities_fylke
 CREATE INDEX IF NOT EXISTS idx_municipalities_navn_norm
   ON municipalities(kommunenavn_normalized);
 
+-- Tilleggs-metrikker for andre Røde Kors-aktiviteter (multi-aktivitet toggle).
+-- Idempotent: ALTER ... IF NOT EXISTS er Postgres 9.6+
+ALTER TABLE municipalities
+  ADD COLUMN IF NOT EXISTS antall_barn_6_16 integer;        -- fra SSB 07459 (Leksehjelp-behov)
+ALTER TABLE municipalities
+  ADD COLUMN IF NOT EXISTS antall_innvandrere integer;      -- fra SSB 09817 (Norsktrening-behov)
+
 -- ----------------------------------------------------------------
 -- 2. Røde Kors lokalforeninger (kun aktive Lokalforening-typer)
 -- ----------------------------------------------------------------

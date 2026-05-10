@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "ingest:ssb": "tsx --env-file=.env.local scripts/ingest-ssb.ts",
+    "ingest:ssb-extra": "tsx --env-file=.env.local scripts/ingest-ssb-extra.ts",
     "ingest:redcross": "tsx --env-file=.env.local scripts/ingest-redcross.ts"
   },
   "dependencies": {
