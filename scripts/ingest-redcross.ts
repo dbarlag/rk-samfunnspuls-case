@@ -122,8 +122,14 @@ function transform(
   const seenActivities = new Set<string>();
   const unmatched: string[] = [];
 
+  // Inkluder både Lokalforening OG Distrikt. Noen byer (Oslo, deler av
+  // Vestland) administrerer Besøkstjeneste sentralt fra Distrikt-nivå
+  // istedenfor egne lokalforeninger. Filtrerer vi bort Distrikt mister
+  // disse helt fra dekningstellingen — feilaktig.
+  const RELEVANT_TYPES = new Set(["Lokalforening", "Distrikt"]);
+
   for (const b of raw) {
-    if (b.branchType !== "Lokalforening") continue;
+    if (!RELEVANT_TYPES.has(b.branchType)) continue;
     if (!b.branchStatus.isActive) continue;
 
     const muniRaw = b.branchLocation?.municipality?.trim() ?? null;
