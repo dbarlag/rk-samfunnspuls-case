@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import { Source_Sans_3 } from "next/font/google";
 
+import { SiteFooter } from "@/components/SiteFooter";
+import { SiteHeader } from "@/components/SiteHeader";
+
 import "@digdir/designsystemet-css/index.css";
 import "rk-design-tokens/design-tokens-build/theme.css";
 import "./globals.css";
@@ -24,7 +27,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="nb">
-      <body className={sourceSans3.className}>{children}</body>
+      <body className={sourceSans3.className}>
+        <SiteHeader />
+        {children}
+        <SiteFooter />
+      </body>
     </html>
   );
 }
