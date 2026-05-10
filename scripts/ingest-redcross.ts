@@ -171,27 +171,33 @@ function transform(
   return { branches, activities };
 }
 
-async function upsertBatched<T>(
-  table: "red_cross_branches" | "branch_activities",
-  rows: T[],
-  conflictKey?: string,
-) {
+const BATCH_SIZE = 200;
+
+async function upsertBranches(rows: BranchInsert[]) {
   const supabase = createAdminClient();
-  const batchSize = 200;
-  for (let i = 0; i < rows.length; i += batchSize) {
-    const batch = rows.slice(i, i + batchSize);
-    // Cast trengs fordi vi bruker generisk T
-    const query = supabase.from(table);
-    const { error } = conflictKey
-      ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (query.upsert as any)(batch, { onConflict: conflictKey })
-      : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        await (query.insert as any)(batch);
+  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+    const batch = rows.slice(i, i + BATCH_SIZE);
+    const { error } = await supabase
+      .from("red_cross_branches")
+      .upsert(batch, { onConflict: "branch_id" });
     if (error) {
-      console.error(`Feil ved ${table}:`, error);
+      console.error("Feil ved red_cross_branches:", error);
       throw error;
     }
-    console.log(`   ${Math.min(i + batchSize, rows.length)}/${rows.length}`);
+    console.log(`   ${Math.min(i + BATCH_SIZE, rows.length)}/${rows.length}`);
+  }
+}
+
+async function insertActivities(rows: BranchActivity[]) {
+  const supabase = createAdminClient();
+  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+    const batch = rows.slice(i, i + BATCH_SIZE);
+    const { error } = await supabase.from("branch_activities").insert(batch);
+    if (error) {
+      console.error("Feil ved branch_activities:", error);
+      throw error;
+    }
+    console.log(`   ${Math.min(i + BATCH_SIZE, rows.length)}/${rows.length}`);
   }
 }
 
@@ -203,7 +209,7 @@ async function syncToDb(
 
   // 1. Upsert branches (oppdater eksisterende, sett inn nye)
   console.log(`→ Upserting ${branches.length} branches...`);
-  await upsertBatched("red_cross_branches", branches, "branch_id");
+  await upsertBranches(branches);
 
   // 2. Slett stale branches (de som ikke er i denne kjøringen).
   //    branch_activities har ON DELETE CASCADE → ryddes med
@@ -234,7 +240,7 @@ async function syncToDb(
   if (delErr) throw delErr;
 
   console.log(`→ Inserting ${activities.length} activities...`);
-  await upsertBatched("branch_activities", activities);
+  await insertActivities(activities);
 }
 
 async function main() {

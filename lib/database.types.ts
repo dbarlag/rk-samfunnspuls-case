@@ -41,6 +41,8 @@ export type BranchActivity = {
   activity_name: string;
 };
 
+// Database-type formet etter Supabase-postgrest-js sin GenericSchema.
+// Hver tabell må ha Row/Insert/Update + Relationships (selv om tom).
 export type Database = {
   public: {
     Tables: {
@@ -48,21 +50,38 @@ export type Database = {
         Row: Municipality;
         Insert: MunicipalityInsert;
         Update: Partial<MunicipalityInsert>;
+        Relationships: [];
       };
       red_cross_branches: {
         Row: Branch;
         Insert: BranchInsert;
         Update: Partial<BranchInsert>;
+        Relationships: [
+          {
+            foreignKeyName: "red_cross_branches_kommunenummer_fkey";
+            columns: ["kommunenummer"];
+            isOneToOne: false;
+            referencedRelation: "municipalities";
+            referencedColumns: ["kommunenummer"];
+          },
+        ];
       };
       branch_activities: {
         Row: BranchActivity;
         Insert: BranchActivity;
         Update: Partial<BranchActivity>;
+        Relationships: [
+          {
+            foreignKeyName: "branch_activities_branch_id_fkey";
+            columns: ["branch_id"];
+            isOneToOne: false;
+            referencedRelation: "red_cross_branches";
+            referencedColumns: ["branch_id"];
+          },
+        ];
       };
     };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
-    Enums: Record<string, never>;
-    CompositeTypes: Record<string, never>;
+    Views: { [_ in never]: never };
+    Functions: { [_ in never]: never };
   };
 };
