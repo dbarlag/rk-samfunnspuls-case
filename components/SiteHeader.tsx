@@ -11,6 +11,7 @@ export function SiteHeader() {
         { label: "Metode", href: "/metode" },
       ]}
       showNavItems
+      showMenuButton={false}
       showLogin={false}
       showSearch={false}
       showCta={false}
