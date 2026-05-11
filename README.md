@@ -4,7 +4,7 @@ Hjemmeoppgave for senior frontend-stillingen i Røde Kors. En interaktiv kartsid
 
 Tanken er å gi fagansvarlige og frivillige et utgangspunkt for å planlegge nye lokale grupper.
 
-🌐 Live: _[sett inn Vercel-URL]_
+🌐 Live: <https://rk-case.vercel.app/>
 
 ## Tech
 
