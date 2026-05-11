@@ -2,7 +2,7 @@
  * Server-side wrapper rundt vårt eget API.
  *
  * Frontend-pages (server components) bruker disse helperne for å hente
- * data — aldri direkte DB-kall. Det matcher oppgavens datafyt-spec:
+ * data — aldri direkte DB-kall.
  *   Åpen data → DB → /api/* → Frontend
  *
  * `getBaseUrl()` håndterer tre miljøer:
