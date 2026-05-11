@@ -1,22 +1,37 @@
 import { HomeView } from "@/components/HomeView";
 import { type KommunePath } from "@/components/MunicipalityMap";
-import { getData } from "@/lib/data";
-import { getKommunePaths, MAP_HEIGHT, MAP_WIDTH } from "@/lib/geo";
+import { type ActivityKey } from "@/lib/activities";
+import { apiFetch } from "@/lib/api-client";
+import { type CoverageRow } from "@/lib/coverage";
+
+// SSR — sidene rendres per request så self-fetch til /api/* fungerer
+// (under build er ikke API-rutene ferdig deployet).
+export const dynamic = "force-dynamic";
+
+type CoverageAllResponse = {
+  data: Record<ActivityKey, CoverageRow[]>;
+};
+
+type GeoResponse = {
+  data: {
+    paths: KommunePath[];
+    viewBoxWidth: number;
+    viewBoxHeight: number;
+  };
+};
 
 export default async function HomePage() {
-  const { coverageByActivity } = await getData();
-
-  const pathsMap = getKommunePaths();
-  const paths: KommunePath[] = Array.from(pathsMap.entries()).map(
-    ([knr, { name, d }]) => ({ knr, name, d }),
-  );
+  const [coverage, geo] = await Promise.all([
+    apiFetch<CoverageAllResponse>("/api/coverage"),
+    apiFetch<GeoResponse>("/api/geo"),
+  ]);
 
   return (
     <HomeView
-      coverageByActivity={coverageByActivity}
-      paths={paths}
-      viewBoxWidth={MAP_WIDTH}
-      viewBoxHeight={MAP_HEIGHT}
+      coverageByActivity={coverage.data}
+      paths={geo.data.paths}
+      viewBoxWidth={geo.data.viewBoxWidth}
+      viewBoxHeight={geo.data.viewBoxHeight}
     />
   );
 }
