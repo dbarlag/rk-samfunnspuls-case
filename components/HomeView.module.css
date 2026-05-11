@@ -1,8 +1,4 @@
-/* Lokale konstanter for verdier som ikke er dekket av rk-design-tokens.
-   Holdes på ett sted så de er enkle å oppdatere konsekvent. */
 .page {
-  --eyebrow-letter-spacing: 0.05em; /* uppercase-tracking — ikke dekket av --ds-letter-spacing-* */
-
   max-width: 1300px;
   margin: 0 auto;
   padding: var(--ds-size-8) var(--ds-size-6) var(--ds-size-12);
@@ -15,18 +11,18 @@
 .eyebrow {
   color: var(--ds-color-accent-base-default);
   font-weight: var(--ds-font-weight-medium);
-  letter-spacing: var(--eyebrow-letter-spacing);
   text-transform: uppercase;
   font-size: var(--ds-body-xs-font-size);
   margin-bottom: var(--ds-size-2);
 }
 
 .headingSpacer {
-  margin-bottom: var(--ds-size-3);
+  margin-bottom: var(--ds-size-5);
 }
 
 .lede {
-  max-width: 720px;
+  max-width: 640px;
+  color: var(--ds-color-neutral-text-subtle);
 }
 
 .toggleGroup {
@@ -93,7 +89,6 @@
 .statLabel {
   color: var(--ds-color-neutral-text-subtle);
   font-weight: var(--ds-font-weight-medium);
-  letter-spacing: var(--eyebrow-letter-spacing);
   text-transform: uppercase;
   font-size: var(--ds-body-xs-font-size);
   margin-bottom: var(--ds-size-2);
@@ -102,7 +97,6 @@
 .statLabelHighlight {
   color: var(--ds-color-accent-base-default);
   font-weight: var(--ds-font-weight-medium);
-  letter-spacing: var(--eyebrow-letter-spacing);
   text-transform: uppercase;
   font-size: var(--ds-body-xs-font-size);
   margin-bottom: var(--ds-size-2);

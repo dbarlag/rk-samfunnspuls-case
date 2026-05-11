@@ -88,13 +88,13 @@ export function HomeView({
       <header className={styles.header}>
         <div className={styles.eyebrow}>Røde Kors Samfunnspuls</div>
         <div className={styles.headingSpacer}>
-          <Heading level={1}>
+          <Heading level={1} data-size="xl">
             {isFylkeMode
               ? `Hvilke fylker har størst dekningsgap for ${config.label.toLowerCase()}?`
               : `Hvor mangler vi ${config.label.toLowerCase()}?`}
           </Heading>
         </div>
-        <Paragraph data-size="lg" className={styles.lede}>
+        <Paragraph data-size="md" className={styles.lede}>
           Datadrevet beslutningsstøtte for fagansvarlige. Kombinerer SSB-data
           om {config.needLabelLong.toLowerCase()} med Røde Kors’ egen
           oversikt over aktive lokalforeninger og distrikter.

@@ -1,7 +1,4 @@
-/* Lokale konstanter for verdier som ikke er dekket av rk-design-tokens. */
 .layout {
-  --eyebrow-letter-spacing: 0.05em; /* uppercase-tracking — ikke dekket av --ds-letter-spacing-* */
-
   display: grid;
   grid-template-columns: minmax(0, 1fr) 280px;
   gap: var(--ds-size-6);
@@ -72,7 +69,6 @@
   color: var(--ds-color-neutral-text-subtle);
   font-weight: var(--ds-font-weight-medium);
   text-transform: uppercase;
-  letter-spacing: var(--eyebrow-letter-spacing);
   margin-bottom: var(--ds-size-1);
 }
 

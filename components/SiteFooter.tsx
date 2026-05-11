@@ -8,10 +8,7 @@ export function SiteFooter() {
       data-color="primary"
       hideNewsletter
       shortcutsTitle="Snarveier"
-      shortcutsLinks={[
-        { label: "Forsiden", href: "/" },
-        { label: "Metode", href: "/metode" },
-      ]}
+      shortcutsLinks={[{ label: "Forsiden", href: "/" }]}
       linksTitle="Lenker"
       linksLinks={[
         { label: "Røde Kors", href: "https://www.rodekors.no" },

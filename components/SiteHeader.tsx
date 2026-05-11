@@ -6,11 +6,7 @@ export function SiteHeader() {
   return (
     <Header
       data-color="primary"
-      navItems={[
-        { label: "Forsiden", href: "/" },
-        { label: "Metode", href: "/metode" },
-      ]}
-      showNavItems
+      showNavItems={false}
       showMenuButton={false}
       showLogin={false}
       showSearch={false}
