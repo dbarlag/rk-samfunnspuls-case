@@ -1,8 +1,8 @@
 /**
  * Ingest tilleggs-metrikker fra SSB → municipalities (UPDATE eksisterende rader).
  *
- * - Tabell 07459: Befolkning per alder per kommune → sum av barn 6-16
- *   (proxy for "Leksehjelp"-behov)
+ * - Tabell 07459: Befolkning per alder per kommune → sum av ungdom 13-19
+ *   (proxy for "Leksehjelp"-behov — RK Leksehjelp er for ungdomsskole+VGS).
  * - Tabell 09817 + Landbakgrunn=Alle: Innvandrere per kommune
  *   (proxy for "Norsktrening"-behov)
  * - Tabell 09817 + Landbakgrunn=flyktningland: sum innvandrere fra
@@ -73,11 +73,13 @@ async function fetchSSB(
   return (await res.json()) as JsonStat2;
 }
 
-// ---- Tabell 07459: barn 6-16 ----------------------------------------
+// ---- Tabell 07459: ungdom 13-19 -------------------------------------
 
-async function fetchBarn6_16(validKnr: Set<string>): Promise<Map<string, number>> {
-  // SSB bruker 3-sifret padded alder ("006", "007", ..., "016") i 07459.
-  const aldre = Array.from({ length: 11 }, (_, i) => String(i + 6).padStart(3, "0"));
+async function fetchUngdom13_19(validKnr: Set<string>): Promise<Map<string, number>> {
+  // SSB bruker 3-sifret padded alder ("013", "014", ..., "019") i 07459.
+  // 13-19 dekker ungdomsskole (13-15) + VGS (16-19) — målgruppen for
+  // RK Leksehjelp.
+  const aldre = Array.from({ length: 7 }, (_, i) => String(i + 13).padStart(3, "0"));
 
   const data = await fetchSSB("07459", {
     query: [
@@ -117,7 +119,7 @@ async function fetchBarn6_16(validKnr: Set<string>): Promise<Map<string, number>
     }
     result.set(regionCode, sum);
   }
-  console.log(`   → ${result.size} kommuner med barn-6-16-tall`);
+  console.log(`   → ${result.size} kommuner med ungdom-13-19-tall`);
   return result;
 }
 
@@ -244,7 +246,7 @@ async function fetchFlyktningProxy(
 // ---- Update DB ------------------------------------------------------
 
 async function updateMunicipalities(
-  barn: Map<string, number>,
+  ungdom: Map<string, number>,
   innvandrere: Map<string, number>,
   flyktninger: Map<string, number>,
 ) {
@@ -252,26 +254,26 @@ async function updateMunicipalities(
 
   const updates: Array<{
     kommunenummer: string;
-    antall_barn_6_16: number | null;
+    antall_ungdom_13_19: number | null;
     antall_innvandrere: number | null;
     antall_flyktninger: number | null;
   }> = [];
 
   const allKnr = new Set([
-    ...barn.keys(),
+    ...ungdom.keys(),
     ...innvandrere.keys(),
     ...flyktninger.keys(),
   ]);
   for (const knr of allKnr) {
     updates.push({
       kommunenummer: knr,
-      antall_barn_6_16: barn.get(knr) ?? null,
+      antall_ungdom_13_19: ungdom.get(knr) ?? null,
       antall_innvandrere: innvandrere.get(knr) ?? null,
       antall_flyktninger: flyktninger.get(knr) ?? null,
     });
   }
 
-  console.log(`→ Updating ${updates.length} kommuner (kun de tre nye kolonnene)`);
+  console.log(`→ Updating ${updates.length} kommuner (tre tilleggs-kolonner)`);
   // Bruker eksplisitt UPDATE per kommune. .upsert() med sparse cols vil ellers
   // INSERT med NULL-er og bryte NOT NULL-constraints på kommunenavn osv.
   for (let i = 0; i < updates.length; i++) {
@@ -279,7 +281,7 @@ async function updateMunicipalities(
     const { error } = await supabase
       .from("municipalities")
       .update({
-        antall_barn_6_16: u.antall_barn_6_16,
+        antall_ungdom_13_19: u.antall_ungdom_13_19,
         antall_innvandrere: u.antall_innvandrere,
         antall_flyktninger: u.antall_flyktninger,
       })
@@ -295,8 +297,8 @@ async function main() {
   const validKnr = loadValidKommunenummer();
   console.log(`→ Gyldige 2024-kommuner: ${validKnr.size}`);
 
-  console.log("\n=== Tabell 07459 (barn 6-16) ===");
-  const barn = await fetchBarn6_16(validKnr);
+  console.log("\n=== Tabell 07459 (ungdom 13-19) ===");
+  const ungdom = await fetchUngdom13_19(validKnr);
 
   console.log("\n=== Tabell 09817 (innvandrere alle land) ===");
   const innvandrere = await fetchInnvandrere(validKnr);
@@ -305,7 +307,7 @@ async function main() {
   const flyktninger = await fetchFlyktningProxy(validKnr);
 
   console.log("\n=== Skriv til Supabase ===");
-  await updateMunicipalities(barn, innvandrere, flyktninger);
+  await updateMunicipalities(ungdom, innvandrere, flyktninger);
 
   console.log("\n✓ Done.");
 }

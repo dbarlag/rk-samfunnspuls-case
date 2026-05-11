@@ -12,9 +12,9 @@ export type Municipality = {
   antall_67plus_alene: number; // GENERATED
   total_befolkning: number | null;
   // Multi-aktivitet behov-metrikker (kommer fra ekstra ETL):
-  antall_barn_6_16: number | null;       // SSB 07459 sum 6-16 (Leksehjelp-behov)
+  antall_ungdom_13_19: number | null;    // SSB 07459 sum 13-19 (Leksehjelp-behov, ungdomsskole+VGS)
   antall_innvandrere: number | null;      // SSB 09817 (Norsktrening-behov)
-  antall_flyktninger: number | null;      // SSB 05183 (Flyktningguide-behov)
+  antall_flyktninger: number | null;      // SSB 09817 13-lands proxy (Flyktningguide-behov)
   data_year: number | null;
   updated_at: string;
 };
@@ -31,7 +31,7 @@ export type MunicipalityInsert = {
   fylkesnavn?: string | null;
   antall_67_79_alene?: number | null;
   antall_80plus_alene?: number | null;
-  antall_barn_6_16?: number | null;
+  antall_ungdom_13_19?: number | null;
   antall_innvandrere?: number | null;
   antall_flyktninger?: number | null;
   total_befolkning?: number | null;

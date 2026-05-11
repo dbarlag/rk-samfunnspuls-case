@@ -55,10 +55,10 @@ export const ACTIVITY_CONFIGS: Record<ActivityKey, ActivityConfig> = {
     key: "leksehjelp",
     activityName: ACTIVITIES.LEKSEHJELP,
     label: "Leksehjelp",
-    needLabel: "barn 6-16",
-    needLabelLong: "Barn i grunnskolealder (6-16 år)",
+    needLabel: "ungdom 13-19",
+    needLabelLong: "Ungdom i ungdomsskole + VGS-alder (13-19 år)",
     needSource: "SSB tabell 07459",
-    needAccessor: (m) => m.antall_barn_6_16 ?? 0,
+    needAccessor: (m) => m.antall_ungdom_13_19 ?? 0,
   },
   norsktrening: {
     key: "norsktrening",

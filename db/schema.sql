@@ -30,12 +30,28 @@ CREATE INDEX IF NOT EXISTS idx_municipalities_navn_norm
 
 -- Tilleggs-metrikker for andre Røde Kors-aktiviteter (multi-aktivitet toggle).
 -- Idempotent: ALTER ... IF NOT EXISTS er Postgres 9.6+
+
+-- Rename antall_barn_6_16 → antall_ungdom_13_19 hvis den gamle kolonnen
+-- finnes (RK Leksehjelp er for 13-25, ikke 6-16). Idempotent via DO-block.
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'municipalities' AND column_name = 'antall_barn_6_16'
+  ) AND NOT EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'municipalities' AND column_name = 'antall_ungdom_13_19'
+  ) THEN
+    ALTER TABLE municipalities RENAME COLUMN antall_barn_6_16 TO antall_ungdom_13_19;
+  END IF;
+END $$;
+
 ALTER TABLE municipalities
-  ADD COLUMN IF NOT EXISTS antall_barn_6_16 integer;        -- fra SSB 07459 (Leksehjelp-behov)
+  ADD COLUMN IF NOT EXISTS antall_ungdom_13_19 integer;     -- fra SSB 07459 (Leksehjelp-behov, 13-19 år)
 ALTER TABLE municipalities
   ADD COLUMN IF NOT EXISTS antall_innvandrere integer;      -- fra SSB 09817 (Norsktrening-behov)
 ALTER TABLE municipalities
-  ADD COLUMN IF NOT EXISTS antall_flyktninger integer;      -- fra SSB 05183 (Flyktningguide-behov)
+  ADD COLUMN IF NOT EXISTS antall_flyktninger integer;      -- fra SSB 09817 (Flyktningguide-behov, 13-lands proxy)
 
 -- ----------------------------------------------------------------
 -- 2. Røde Kors lokalforeninger (kun aktive Lokalforening-typer)

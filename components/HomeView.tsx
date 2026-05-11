@@ -77,7 +77,11 @@ export function HomeView({
   // Fylke-aggregering bruker hele coverage (ikke filtrert), siden poenget
   // er nasjonal sammenligning. Filter-bar handler om kommune-view.
   const fylkeRows = useMemo(() => aggregateByFylke(coverage), [coverage]);
-  const top10Fylke = fylkeRows.slice(0, 10);
+  const fylkerMedUdekkede = fylkeRows.filter(
+    (r) => r.kommuner_uten_dekning > 0,
+  ).length;
+
+  const isFylkeMode = tableMode === "fylke";
 
   return (
     <main className={styles.page}>
@@ -85,7 +89,9 @@ export function HomeView({
         <div className={styles.eyebrow}>Røde Kors Samfunnspuls</div>
         <div className={styles.headingSpacer}>
           <Heading level={1}>
-            Hvor mangler vi {config.label.toLowerCase()}?
+            {isFylkeMode
+              ? `Hvilke fylker har størst dekningsgap for ${config.label.toLowerCase()}?`
+              : `Hvor mangler vi ${config.label.toLowerCase()}?`}
           </Heading>
         </div>
         <Paragraph data-size="lg" className={styles.lede}>
@@ -95,54 +101,112 @@ export function HomeView({
         </Paragraph>
       </header>
 
-      <ToggleGroup
-        value={activity}
-        onChange={(v: string) => setActivity(v as ActivityKey)}
-        data-toggle-group="Velg aktivitet"
-        className={styles.toggleGroup}
-      >
-        {ACTIVITY_KEYS.map((key) => {
-          const cfg = ACTIVITY_CONFIGS[key];
-          return (
-            <ToggleGroup.Item key={key} value={key}>
-              {cfg.label}
-            </ToggleGroup.Item>
-          );
-        })}
-      </ToggleGroup>
+      <div className={styles.togglesRow}>
+        <ToggleGroup
+          value={activity}
+          onChange={(v: string) => setActivity(v as ActivityKey)}
+          data-toggle-group="Velg aktivitet"
+        >
+          {ACTIVITY_KEYS.map((key) => {
+            const cfg = ACTIVITY_CONFIGS[key];
+            return (
+              <ToggleGroup.Item key={key} value={key}>
+                {cfg.label}
+              </ToggleGroup.Item>
+            );
+          })}
+        </ToggleGroup>
 
-      <FilterBar
-        search={search}
-        setSearch={setSearch}
-        fylkeFilter={fylkeFilter}
-        setFylkeFilter={setFylkeFilter}
-        fylker={fylker}
-        onlyUndekket={onlyUndekket}
-        setOnlyUndekket={setOnlyUndekket}
-        matchCount={filteredCoverage.length}
-        totalCount={coverage.length}
-      />
+        <div className={styles.togglesRowSpacer} />
+
+        <ToggleGroup
+          value={tableMode}
+          onChange={(v: string) => setTableMode(v as "kommune" | "fylke")}
+          data-toggle-group="Velg granularitet"
+        >
+          <ToggleGroup.Item value="kommune">Per kommune</ToggleGroup.Item>
+          <ToggleGroup.Item value="fylke">Per fylke</ToggleGroup.Item>
+        </ToggleGroup>
+      </div>
+
+      {!isFylkeMode && (
+        <FilterBar
+          search={search}
+          setSearch={setSearch}
+          fylkeFilter={fylkeFilter}
+          setFylkeFilter={setFylkeFilter}
+          fylker={fylker}
+          onlyUndekket={onlyUndekket}
+          setOnlyUndekket={setOnlyUndekket}
+          matchCount={filteredCoverage.length}
+          totalCount={coverage.length}
+        />
+      )}
+
+      {!isFylkeMode && fylkeFilter !== "" && (
+        <div className={styles.filterBanner}>
+          <span className={styles.filterBannerLabel}>
+            📍 Viser kun kommuner i <strong>{fylkeFilter}</strong> ·{" "}
+            {filteredCoverage.length} kommuner
+          </span>
+          <Button
+            variant="secondary"
+            data-size="sm"
+            onClick={() => setFylkeFilter("")}
+          >
+            Fjern fylke-filter
+          </Button>
+        </div>
+      )}
 
       <section className={styles.statGrid}>
-        <StatCard label="Kommuner totalt" value={coverage.length.toString()} />
-        <StatCard
-          label={`Uten ${config.label.toLowerCase()}`}
-          value={utenDekning.toString()}
-          highlight
-        />
-        <StatCard
-          label={config.needLabelLong}
-          value={totalNeed.toLocaleString("nb-NO")}
-        />
+        {isFylkeMode ? (
+          <>
+            <StatCard
+              label="Fylker totalt"
+              value={fylkeRows.length.toString()}
+            />
+            <StatCard
+              label="Med ≥ 1 udekket kommune"
+              value={fylkerMedUdekkede.toString()}
+              highlight
+            />
+            <StatCard
+              label={config.needLabelLong}
+              value={totalNeed.toLocaleString("nb-NO")}
+            />
+          </>
+        ) : (
+          <>
+            <StatCard
+              label="Kommuner totalt"
+              value={coverage.length.toString()}
+            />
+            <StatCard
+              label={`Uten ${config.label.toLowerCase()}`}
+              value={utenDekning.toString()}
+              highlight
+            />
+            <StatCard
+              label={config.needLabelLong}
+              value={totalNeed.toLocaleString("nb-NO")}
+            />
+          </>
+        )}
       </section>
 
       <section className={styles.mapSection}>
         <div className={styles.sectionHeading}>
-          <Heading level={2} data-size="md">Norgeskart — interaktivt</Heading>
+          <Heading level={2} data-size="md">
+            {isFylkeMode
+              ? "Norgeskart — fargelagt per fylke"
+              : "Norgeskart — interaktivt"}
+          </Heading>
         </div>
         <Paragraph data-size="sm" className={styles.mapHelp}>
-          Hold over en kommune for å se detaljer, eller bruk Tab for å
-          navigere med tastatur. Klikk for full kommuneside.
+          {isFylkeMode
+            ? "Hold over et område for å se aggregert fylke-status. Klikk for å filtrere ned til kommunene i fylket."
+            : "Hold over en kommune for å se detaljer, eller bruk Tab for å navigere med tastatur. Klikk for full kommuneside."}
         </Paragraph>
         <div className={styles.mapFrame}>
           <MunicipalityMap
@@ -152,32 +216,29 @@ export function HomeView({
             viewBoxWidth={viewBoxWidth}
             viewBoxHeight={viewBoxHeight}
             highlightedKnr={isFiltered ? filteredKnr : null}
+            fylkeRows={isFylkeMode ? fylkeRows : null}
+            onFylkeClick={(navn) => {
+              setFylkeFilter(navn);
+              setTableMode("kommune");
+            }}
           />
         </div>
       </section>
 
       <section>
-        <div className={styles.tableHeadingRow}>
+        <div className={styles.tableHeading}>
           <Heading level={2} data-size="md">
-            {tableMode === "kommune"
-              ? "Topp 10 — størst dekningsgap"
-              : "Fylker — andel kommuner uten dekning"}
-            {tableMode === "kommune" && isFiltered && (
+            {isFylkeMode
+              ? "Fylker — andel kommuner uten dekning"
+              : "Topp 10 — størst dekningsgap"}
+            {!isFylkeMode && isFiltered && (
               <span className={styles.tableHeadingMeta}>
                 (av {filteredCoverage.length} matchende)
               </span>
             )}
           </Heading>
-          <ToggleGroup
-            value={tableMode}
-            onChange={(v: string) => setTableMode(v as "kommune" | "fylke")}
-            data-toggle-group="Velg granularitet"
-          >
-            <ToggleGroup.Item value="kommune">Per kommune</ToggleGroup.Item>
-            <ToggleGroup.Item value="fylke">Per fylke</ToggleGroup.Item>
-          </ToggleGroup>
         </div>
-        {tableMode === "kommune" ? (
+        {!isFylkeMode ? (
           top10.length === 0 ? (
             <Card>
               <Card.Block>
@@ -239,7 +300,7 @@ export function HomeView({
           )
         ) : (
           <FylkeTable
-            rows={top10Fylke}
+            rows={fylkeRows}
             needLabel={config.needLabel}
             onSelectFylke={(navn) => {
               setFylkeFilter(navn);

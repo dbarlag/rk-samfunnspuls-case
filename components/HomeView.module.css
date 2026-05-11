@@ -33,6 +33,35 @@
   margin-bottom: var(--ds-size-5);
 }
 
+.togglesRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-size-3);
+  align-items: center;
+  margin-bottom: var(--ds-size-5);
+}
+
+.togglesRowSpacer {
+  flex: 1;
+}
+
+.filterBanner {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-size-3);
+  padding: var(--ds-size-3) var(--ds-size-4);
+  margin-bottom: var(--ds-size-4);
+  background: var(--ds-color-info-surface-tinted);
+  border: 1px solid var(--ds-color-info-border-subtle);
+  border-radius: var(--ds-border-radius-md);
+  color: var(--ds-color-info-text-default);
+  font-size: var(--ds-body-sm-font-size);
+}
+
+.filterBannerLabel {
+  flex: 1;
+}
+
 .filterBar {
   display: flex;
   flex-wrap: wrap;
