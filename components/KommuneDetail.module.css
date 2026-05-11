@@ -81,6 +81,33 @@
   color: var(--ds-color-neutral-text-subtle);
 }
 
+.statBenchmark {
+  margin-top: var(--ds-size-2);
+  font-size: var(--ds-body-xs-font-size);
+  color: var(--ds-color-neutral-text-default);
+}
+
+.benchmarkAbove {
+  color: var(--ds-color-accent-base-default);
+  font-weight: var(--ds-font-weight-medium);
+}
+
+.benchmarkBelow {
+  color: var(--ds-color-success-text-subtle);
+  font-weight: var(--ds-font-weight-medium);
+}
+
+.benchmarkNeutral {
+  color: var(--ds-color-neutral-text-subtle);
+  font-weight: var(--ds-font-weight-medium);
+}
+
+.coverageBenchmark {
+  margin-top: var(--ds-size-2);
+  font-size: var(--ds-body-xs-font-size);
+  color: var(--ds-color-neutral-text-subtle);
+}
+
 /* CoverageCard */
 .coverageLabel {
   font-size: var(--ds-body-xs-font-size);

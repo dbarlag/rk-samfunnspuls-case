@@ -20,7 +20,7 @@ import {
   ACTIVITY_KEYS,
   type ActivityKey,
 } from "@/lib/activities";
-import type { CoverageRow } from "@/lib/coverage";
+import { aggregateByFylke, type CoverageRow, type FylkeRow } from "@/lib/coverage";
 import {
   type KommunePath,
   MunicipalityMap,
@@ -44,6 +44,7 @@ export function HomeView({
   const [search, setSearch] = useState("");
   const [fylkeFilter, setFylkeFilter] = useState("");
   const [onlyUndekket, setOnlyUndekket] = useState(false);
+  const [tableMode, setTableMode] = useState<"kommune" | "fylke">("kommune");
 
   const config = ACTIVITY_CONFIGS[activity];
   const coverage = coverageByActivity[activity];
@@ -73,6 +74,11 @@ export function HomeView({
   const utenDekning = coverage.filter((c) => c.no_coverage).length;
   const totalNeed = coverage.reduce((sum, c) => sum + c.needValue, 0);
 
+  // Fylke-aggregering bruker hele coverage (ikke filtrert), siden poenget
+  // er nasjonal sammenligning. Filter-bar handler om kommune-view.
+  const fylkeRows = useMemo(() => aggregateByFylke(coverage), [coverage]);
+  const top10Fylke = fylkeRows.slice(0, 10);
+
   return (
     <main className={styles.page}>
       <header className={styles.header}>
@@ -93,6 +99,7 @@ export function HomeView({
         value={activity}
         onChange={(v: string) => setActivity(v as ActivityKey)}
         data-toggle-group="Velg aktivitet"
+        className={styles.toggleGroup}
       >
         {ACTIVITY_KEYS.map((key) => {
           const cfg = ACTIVITY_CONFIGS[key];
@@ -150,74 +157,95 @@ export function HomeView({
       </section>
 
       <section>
-        <div className={styles.tableHeading}>
+        <div className={styles.tableHeadingRow}>
           <Heading level={2} data-size="md">
-            Topp 10 — størst dekningsgap
-            {isFiltered && (
+            {tableMode === "kommune"
+              ? "Topp 10 — størst dekningsgap"
+              : "Fylker — andel kommuner uten dekning"}
+            {tableMode === "kommune" && isFiltered && (
               <span className={styles.tableHeadingMeta}>
                 (av {filteredCoverage.length} matchende)
               </span>
             )}
           </Heading>
+          <ToggleGroup
+            value={tableMode}
+            onChange={(v: string) => setTableMode(v as "kommune" | "fylke")}
+            data-toggle-group="Velg granularitet"
+          >
+            <ToggleGroup.Item value="kommune">Per kommune</ToggleGroup.Item>
+            <ToggleGroup.Item value="fylke">Per fylke</ToggleGroup.Item>
+          </ToggleGroup>
         </div>
-        {top10.length === 0 ? (
-          <Card>
-            <Card.Block>
-              <Paragraph data-size="sm">
-                Ingen kommuner matcher filtret. Prøv å fjerne søk eller
-                fylke-valg.
-              </Paragraph>
-            </Card.Block>
-          </Card>
-        ) : (
-          <Table zebra hover border>
-            <Table.Head>
-              <Table.Row>
-                <Table.HeaderCell className={styles.rankCell}>#</Table.HeaderCell>
-                <Table.HeaderCell>Kommune</Table.HeaderCell>
-                <Table.HeaderCell className={styles.numericCell}>
-                  {config.needLabel}
-                </Table.HeaderCell>
-                <Table.HeaderCell>Dekning</Table.HeaderCell>
-              </Table.Row>
-            </Table.Head>
-            <Table.Body>
-              {top10.map((row, i) => (
-                <Table.Row key={row.kommunenummer}>
-                  <Table.Cell className={styles.rankCell}>{i + 1}</Table.Cell>
-                  <Table.Cell>
-                    <Link
-                      href={`/kommune/${row.kommunenummer}`}
-                      className={styles.kommuneLink}
-                    >
-                      <div className={styles.kommuneName}>
-                        {row.kommunenavn} →
-                      </div>
-                      <div className={styles.kommuneFylke}>
-                        {row.fylkesnavn}
-                      </div>
-                    </Link>
-                  </Table.Cell>
-                  <Table.Cell className={styles.numericCell}>
-                    {row.needValue.toLocaleString("nb-NO")}
-                  </Table.Cell>
-                  <Table.Cell>
-                    {row.no_coverage ? (
-                      <Tag data-color="danger">Ingen dekning</Tag>
-                    ) : (
-                      <span className={styles.coverageMeta}>
-                        {row.antall_grupper} gruppe
-                        {row.antall_grupper !== 1 ? "r" : ""}{" "}
-                        <span className={styles.coverageDim}>
-                          · ≈{Math.round(row.need_per_service ?? 0)} per gruppe
-                        </span>
-                      </span>
-                    )}
-                  </Table.Cell>
+        {tableMode === "kommune" ? (
+          top10.length === 0 ? (
+            <Card>
+              <Card.Block>
+                <Paragraph data-size="sm">
+                  Ingen kommuner matcher filtret. Prøv å fjerne søk eller
+                  fylke-valg.
+                </Paragraph>
+              </Card.Block>
+            </Card>
+          ) : (
+            <Table zebra hover border>
+              <Table.Head>
+                <Table.Row>
+                  <Table.HeaderCell className={styles.rankCell}>#</Table.HeaderCell>
+                  <Table.HeaderCell>Kommune</Table.HeaderCell>
+                  <Table.HeaderCell className={styles.numericCell}>
+                    {config.needLabel}
+                  </Table.HeaderCell>
+                  <Table.HeaderCell>Dekning</Table.HeaderCell>
                 </Table.Row>
-              ))}
-            </Table.Body>
-          </Table>
+              </Table.Head>
+              <Table.Body>
+                {top10.map((row, i) => (
+                  <Table.Row key={row.kommunenummer}>
+                    <Table.Cell className={styles.rankCell}>{i + 1}</Table.Cell>
+                    <Table.Cell>
+                      <Link
+                        href={`/kommune/${row.kommunenummer}`}
+                        className={styles.kommuneLink}
+                      >
+                        <div className={styles.kommuneName}>
+                          {row.kommunenavn} →
+                        </div>
+                        <div className={styles.kommuneFylke}>
+                          {row.fylkesnavn}
+                        </div>
+                      </Link>
+                    </Table.Cell>
+                    <Table.Cell className={styles.numericCell}>
+                      {row.needValue.toLocaleString("nb-NO")}
+                    </Table.Cell>
+                    <Table.Cell>
+                      {row.no_coverage ? (
+                        <Tag data-color="danger">Ingen dekning</Tag>
+                      ) : (
+                        <span className={styles.coverageMeta}>
+                          {row.antall_grupper} gruppe
+                          {row.antall_grupper !== 1 ? "r" : ""}{" "}
+                          <span className={styles.coverageDim}>
+                            · ≈{Math.round(row.need_per_service ?? 0)} per gruppe
+                          </span>
+                        </span>
+                      )}
+                    </Table.Cell>
+                  </Table.Row>
+                ))}
+              </Table.Body>
+            </Table>
+          )
+        ) : (
+          <FylkeTable
+            rows={top10Fylke}
+            needLabel={config.needLabel}
+            onSelectFylke={(navn) => {
+              setFylkeFilter(navn);
+              setTableMode("kommune");
+            }}
+          />
         )}
       </section>
     </main>
@@ -295,6 +323,77 @@ function FilterBar({
         </Button>
       )}
     </div>
+  );
+}
+
+function FylkeTable({
+  rows,
+  needLabel,
+  onSelectFylke,
+}: {
+  rows: FylkeRow[];
+  needLabel: string;
+  onSelectFylke: (fylkesnavn: string) => void;
+}) {
+  return (
+    <Table zebra hover border>
+      <Table.Head>
+        <Table.Row>
+          <Table.HeaderCell className={styles.rankCell}>#</Table.HeaderCell>
+          <Table.HeaderCell>Fylke</Table.HeaderCell>
+          <Table.HeaderCell>Uten dekning</Table.HeaderCell>
+          <Table.HeaderCell className={styles.numericCell}>
+            {needLabel} totalt
+          </Table.HeaderCell>
+          <Table.HeaderCell>Snitt per gruppe</Table.HeaderCell>
+        </Table.Row>
+      </Table.Head>
+      <Table.Body>
+        {rows.map((row, i) => (
+          <Table.Row key={row.fylkesnavn}>
+            <Table.Cell className={styles.rankCell}>{i + 1}</Table.Cell>
+            <Table.Cell>
+              <button
+                type="button"
+                onClick={() => onSelectFylke(row.fylkesnavn)}
+                className={styles.fylkeButton}
+              >
+                <span className={styles.kommuneName}>
+                  {row.fylkesnavn} →
+                </span>
+                <span className={styles.kommuneFylke}>
+                  {row.kommuner_totalt} kommuner
+                </span>
+              </button>
+            </Table.Cell>
+            <Table.Cell>
+              {row.kommuner_uten_dekning > 0 ? (
+                <Tag data-color="danger">
+                  {row.kommuner_uten_dekning} av {row.kommuner_totalt} (
+                  {Math.round(row.pct_uten_dekning * 100)}%)
+                </Tag>
+              ) : (
+                <Tag data-color="success">Full dekning</Tag>
+              )}
+            </Table.Cell>
+            <Table.Cell className={styles.numericCell}>
+              {row.total_need.toLocaleString("nb-NO")}
+            </Table.Cell>
+            <Table.Cell>
+              {row.need_per_gruppe == null ? (
+                <span className={styles.coverageDim}>—</span>
+              ) : (
+                <span className={styles.coverageMeta}>
+                  ≈{" "}
+                  {Math.round(row.need_per_gruppe).toLocaleString("nb-NO")}{" "}
+                  {needLabel}
+                </span>
+              )}
+            </Table.Cell>
+          </Table.Row>
+        ))}
+      </Table.Body>
+    </Table>
   );
 }
 

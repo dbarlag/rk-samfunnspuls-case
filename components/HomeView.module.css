@@ -29,6 +29,10 @@
   max-width: 720px;
 }
 
+.toggleGroup {
+  margin-bottom: var(--ds-size-5);
+}
+
 .filterBar {
   display: flex;
   flex-wrap: wrap;
@@ -108,6 +112,15 @@
   border-radius: var(--ds-border-radius-md);
 }
 
+.tableHeadingRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-size-3);
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--ds-size-4);
+}
+
 .tableHeading {
   margin-bottom: var(--ds-size-4);
 }
@@ -129,6 +142,23 @@
   color: inherit;
   text-decoration: none;
   display: block;
+}
+
+.fylkeButton {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+.fylkeButton:hover .kommuneName {
+  text-decoration: underline;
 }
 
 .kommuneName {

@@ -2,7 +2,12 @@ import { notFound } from "next/navigation";
 
 import { KommuneDetail } from "@/components/KommuneDetail";
 import { ACTIVITY_KEYS, type ActivityKey } from "@/lib/activities";
-import type { CoverageRow } from "@/lib/coverage";
+import {
+  computeNationalAverages,
+  findRank,
+  type CoverageRow,
+  type NationalAverage,
+} from "@/lib/coverage";
 import { getData } from "@/lib/data";
 
 export async function generateStaticParams() {
@@ -22,14 +27,17 @@ export default async function KommunePage({
   const kommune = municipalities.find((m) => m.kommunenummer === knr);
   if (!kommune) notFound();
 
-  // Plukk ut coverage-rad for denne kommunen for hver aktivitet
   const kommuneCoverage = {} as Record<ActivityKey, CoverageRow>;
+  const nationalAverages = {} as Record<ActivityKey, NationalAverage>;
+  const ranks = {} as Record<ActivityKey, number>;
+
   for (const key of ACTIVITY_KEYS) {
-    const row = coverageByActivity[key].find(
-      (c) => c.kommunenummer === knr,
-    );
+    const fullCoverage = coverageByActivity[key];
+    const row = fullCoverage.find((c) => c.kommunenummer === knr);
     if (!row) notFound();
     kommuneCoverage[key] = row;
+    nationalAverages[key] = computeNationalAverages(fullCoverage);
+    ranks[key] = findRank(fullCoverage, knr) ?? 0;
   }
 
   const kommuneBranches = branches
@@ -50,6 +58,8 @@ export default async function KommunePage({
     <KommuneDetail
       kommune={kommune}
       coverageByActivity={kommuneCoverage}
+      nationalAverages={nationalAverages}
+      ranks={ranks}
       branches={kommuneBranches}
     />
   );

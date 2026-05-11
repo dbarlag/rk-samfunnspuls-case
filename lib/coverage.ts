@@ -74,3 +74,111 @@ export function computeCoverage(
       return (b.need_per_service ?? 0) - (a.need_per_service ?? 0);
     });
 }
+
+/**
+ * Nasjonale snitt + tellinger for én aktivitet.
+ *
+ * Brukes på kommune-detaljsiden for å gi kontekst:
+ * - Er kommunens behov over/under en typisk kommune?
+ * - Er dekningen mer/mindre strukket enn snittet blant dekkede?
+ */
+export type NationalAverage = {
+  meanNeedPerKommune: number;
+  /** Gjennomsnittlig need_per_service blant kommuner med dekning. */
+  meanNeedPerService: number;
+  totalKommuner: number;
+  totalCovered: number;
+  totalUncovered: number;
+};
+
+export function computeNationalAverages(
+  coverage: CoverageRow[],
+): NationalAverage {
+  const totalNeed = coverage.reduce((s, c) => s + c.needValue, 0);
+  const meanNeedPerKommune = coverage.length === 0 ? 0 : totalNeed / coverage.length;
+
+  const dekkede = coverage.filter((c) => c.need_per_service != null);
+  const meanNeedPerService =
+    dekkede.length === 0
+      ? 0
+      : dekkede.reduce((s, c) => s + (c.need_per_service ?? 0), 0) /
+        dekkede.length;
+
+  return {
+    meanNeedPerKommune,
+    meanNeedPerService,
+    totalKommuner: coverage.length,
+    totalCovered: dekkede.length,
+    totalUncovered: coverage.length - dekkede.length,
+  };
+}
+
+/**
+ * Aggregert dekning per fylke.
+ *
+ * Sorteres på "andel udekkede kommuner" descending, så på "behov per gruppe"
+ * descending — fylker hvor flest tettsteder mangler dekning kommer først,
+ * og innenfor samme dekningsgrad havner mest strukket tjeneste øverst.
+ */
+export type FylkeRow = {
+  fylkesnavn: string;
+  kommuner_totalt: number;
+  kommuner_uten_dekning: number;
+  total_need: number;
+  total_grupper: number;
+  pct_uten_dekning: number;
+  need_per_gruppe: number | null;
+};
+
+export function aggregateByFylke(coverage: CoverageRow[]): FylkeRow[] {
+  const groups = new Map<string, FylkeRow>();
+  for (const c of coverage) {
+    if (!c.fylkesnavn) continue;
+    let row = groups.get(c.fylkesnavn);
+    if (!row) {
+      row = {
+        fylkesnavn: c.fylkesnavn,
+        kommuner_totalt: 0,
+        kommuner_uten_dekning: 0,
+        total_need: 0,
+        total_grupper: 0,
+        pct_uten_dekning: 0,
+        need_per_gruppe: null,
+      };
+      groups.set(c.fylkesnavn, row);
+    }
+    row.kommuner_totalt += 1;
+    if (c.no_coverage) row.kommuner_uten_dekning += 1;
+    row.total_need += c.needValue;
+    row.total_grupper += c.antall_grupper;
+  }
+
+  for (const row of groups.values()) {
+    row.pct_uten_dekning =
+      row.kommuner_totalt === 0
+        ? 0
+        : row.kommuner_uten_dekning / row.kommuner_totalt;
+    row.need_per_gruppe =
+      row.total_grupper === 0 ? null : row.total_need / row.total_grupper;
+  }
+
+  return Array.from(groups.values()).sort((a, b) => {
+    if (a.pct_uten_dekning !== b.pct_uten_dekning)
+      return b.pct_uten_dekning - a.pct_uten_dekning;
+    return (b.need_per_gruppe ?? 0) - (a.need_per_gruppe ?? 0);
+  });
+}
+
+/**
+ * Finn 1-indexed rang for kommunen i den allerede sorterte coverage-listen.
+ * (Sorteringen er: udekkede først descending behov, så dekkede med
+ *  descending behov + need_per_service.) Rang 1 = høyest prioritet for
+ *  nye grupper.
+ */
+export function findRank(
+  coverage: CoverageRow[],
+  kommunenummer: string,
+): number | null {
+  const idx = coverage.findIndex((c) => c.kommunenummer === kommunenummer);
+  return idx === -1 ? null : idx + 1;
+}
