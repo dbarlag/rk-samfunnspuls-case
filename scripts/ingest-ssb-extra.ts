@@ -3,8 +3,14 @@
  *
  * - Tabell 07459: Befolkning per alder per kommune → sum av barn 6-16
  *   (proxy for "Leksehjelp"-behov)
- * - Tabell 09817: Innvandrere per kommune
+ * - Tabell 09817 + Landbakgrunn=Alle: Innvandrere per kommune
  *   (proxy for "Norsktrening"-behov)
+ * - Tabell 09817 + Landbakgrunn=flyktningland: sum innvandrere fra
+ *   klassiske flyktningland (Syria, Afghanistan, Eritrea, Somalia, Ukraina,
+ *   Irak, Iran, Etiopia, Sudan, Sør-Sudan, Kosovo, Myanmar, Russland)
+ *   som proxy for "Flyktningguide"-behov. SSB publiserer ikke
+ *   flyktningstatus på kommune-nivå (personvern), så landbakgrunn-proxy
+ *   er standardmetoden.
  *
  * Forutsetter at ingest-ssb.ts allerede er kjørt så de 357 kommunene finnes.
  *
@@ -154,11 +160,93 @@ async function fetchInnvandrere(
   return result;
 }
 
+// ---- Tabell 09817 + utvalgte land: flyktning-proxy ------------------
+
+/**
+ * Klassiske flyktningland (SSB landkode → navn).
+ * Listen er basert på UDI/IMDi sin praksis: land som dominerer
+ * flyktning-tilstrømming til Norge de siste tiårene.
+ *
+ * Vi summerer "Innvandrere" (InnvandrKat=B) fra disse landene per
+ * kommune som proxy for personer med flyktningbakgrunn.
+ *
+ * Begrensning: dette overestimerer noe (også arbeidsinnvandrere fra
+ * disse landene telles) og underestimerer (flyktninger fra andre land
+ * telles ikke). Men det er den beste tilnærmingen kommune-nivå
+ * SSB-data tillater.
+ */
+const FLYKTNINGLAND: Record<string, string> = {
+  "404": "Afghanistan",
+  "672": "Eritrea",
+  "612": "Etiopia",
+  "815": "Iran",
+  "812": "Irak",
+  "162": "Kosovo",
+  "839": "Myanmar",
+  "140": "Russland",
+  "684": "Somalia",
+  "685": "Sudan",
+  "686": "Sør-Sudan",
+  "816": "Syria",
+  "132": "Ukraina",
+};
+
+async function fetchFlyktningProxy(
+  validKnr: Set<string>,
+): Promise<Map<string, number>> {
+  const data = await fetchSSB("09817", {
+    query: [
+      { code: "Region", selection: { filter: "all", values: ["*"] } },
+      { code: "InnvandrKat", selection: { filter: "item", values: ["B"] } },
+      {
+        code: "Landbakgrunn",
+        selection: { filter: "item", values: Object.keys(FLYKTNINGLAND) },
+      },
+      { code: "ContentsCode", selection: { filter: "item", values: ["Personer1"] } },
+      { code: "Tid", selection: { filter: "top", values: ["1"] } },
+    ],
+    response: { format: "json-stat2" },
+  });
+
+  console.log(
+    `   sizes: ${data.size.join(" × ")}, year: ${Object.values(data.dimension.Tid.category.label)[0]}`,
+  );
+  console.log(
+    `   land i utvalget: ${Object.values(FLYKTNINGLAND).join(", ")}`,
+  );
+
+  const dimOrder = data.id;
+  const sizes = data.size;
+  const regionIdx = data.dimension.Region.category.index;
+  const landIdx = data.dimension.Landbakgrunn.category.index;
+
+  const result = new Map<string, number>();
+  for (const [regionCode, rPos] of Object.entries(regionIdx)) {
+    if (!validKnr.has(regionCode)) continue;
+    let sum = 0;
+    for (const lPos of Object.values(landIdx)) {
+      const pos: Record<string, number> = {
+        Region: rPos,
+        InnvandrKat: 0,
+        Landbakgrunn: lPos,
+        ContentsCode: 0,
+        Tid: 0,
+      };
+      const v = data.value[flatIndex(dimOrder.map((d) => pos[d]), sizes)];
+      if (v != null) sum += v;
+    }
+    result.set(regionCode, sum);
+  }
+  console.log(`   → ${result.size} kommuner med flyktning-proxy-tall`);
+  return result;
+}
+
 // ---- Update DB ------------------------------------------------------
 
 async function updateMunicipalities(
   barn: Map<string, number>,
   innvandrere: Map<string, number>,
+  flyktninger: Map<string, number>,
 ) {
   const supabase = createAdminClient();
 
@@ -166,18 +254,24 @@ async function updateMunicipalities(
     kommunenummer: string;
     antall_barn_6_16: number | null;
     antall_innvandrere: number | null;
+    antall_flyktninger: number | null;
   }> = [];
 
-  const allKnr = new Set([...barn.keys(), ...innvandrere.keys()]);
+  const allKnr = new Set([
+    ...barn.keys(),
+    ...innvandrere.keys(),
+    ...flyktninger.keys(),
+  ]);
   for (const knr of allKnr) {
     updates.push({
       kommunenummer: knr,
       antall_barn_6_16: barn.get(knr) ?? null,
       antall_innvandrere: innvandrere.get(knr) ?? null,
+      antall_flyktninger: flyktninger.get(knr) ?? null,
     });
   }
 
-  console.log(`→ Updating ${updates.length} kommuner (kun de to nye kolonnene)`);
+  console.log(`→ Updating ${updates.length} kommuner (kun de tre nye kolonnene)`);
   // Bruker eksplisitt UPDATE per kommune. .upsert() med sparse cols vil ellers
   // INSERT med NULL-er og bryte NOT NULL-constraints på kommunenavn osv.
   for (let i = 0; i < updates.length; i++) {
@@ -187,6 +281,7 @@ async function updateMunicipalities(
       .update({
         antall_barn_6_16: u.antall_barn_6_16,
         antall_innvandrere: u.antall_innvandrere,
+        antall_flyktninger: u.antall_flyktninger,
       })
       .eq("kommunenummer", u.kommunenummer);
     if (error) throw error;
@@ -203,11 +298,14 @@ async function main() {
   console.log("\n=== Tabell 07459 (barn 6-16) ===");
   const barn = await fetchBarn6_16(validKnr);
 
-  console.log("\n=== Tabell 09817 (innvandrere) ===");
+  console.log("\n=== Tabell 09817 (innvandrere alle land) ===");
   const innvandrere = await fetchInnvandrere(validKnr);
 
+  console.log("\n=== Tabell 09817 (flyktning-proxy: 13 klassiske flyktningland) ===");
+  const flyktninger = await fetchFlyktningProxy(validKnr);
+
   console.log("\n=== Skriv til Supabase ===");
-  await updateMunicipalities(barn, innvandrere);
+  await updateMunicipalities(barn, innvandrere, flyktninger);
 
   console.log("\n✓ Done.");
 }

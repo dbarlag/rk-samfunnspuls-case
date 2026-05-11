@@ -1,0 +1,126 @@
+/* Lokale konstanter for verdier som ikke er dekket av rk-design-tokens. */
+.layout {
+  --eyebrow-letter-spacing: 0.05em; /* uppercase-tracking — ikke dekket av --ds-letter-spacing-* */
+
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: var(--ds-size-6);
+  align-items: start;
+}
+
+.svg {
+  height: auto;
+  display: block;
+}
+
+.path {
+  cursor: pointer;
+  outline: none;
+  /* Kort fade når et filter dimmer ikke-matchende kommuner. Tokens har
+     ikke duration-skala, så verdien er hardkodet. */
+  transition: fill-opacity 150ms;
+}
+
+.legend {
+  margin-top: var(--ds-size-4);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-size-3);
+  font-size: var(--ds-body-xs-font-size);
+  color: var(--ds-color-neutral-text-default);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: var(--ds-size-2);
+}
+
+.legendSwatch {
+  width: 14px;
+  height: 14px;
+  border: 1px solid var(--ds-color-neutral-border-subtle);
+  display: inline-block;
+  border-radius: 2px;
+}
+
+.panel {
+  position: sticky;
+  top: var(--ds-size-4);
+  padding: var(--ds-size-5);
+  background: var(--ds-color-neutral-background-default);
+  border: 1px solid var(--ds-color-neutral-border-subtle);
+  border-radius: var(--ds-border-radius-md);
+  /* Faste piksler — sikrer at panelet ikke kollapser visuelt før hover. */
+  min-height: 280px;
+}
+
+.panelEmpty {
+  color: var(--ds-color-neutral-text-subtle);
+  font-size: var(--ds-body-sm-font-size);
+  line-height: var(--ds-line-height-md);
+}
+
+.panelEmptyTitle {
+  margin-bottom: var(--ds-size-2);
+  font-weight: var(--ds-font-weight-medium);
+  color: var(--ds-color-neutral-text-default);
+}
+
+.panelEyebrow {
+  font-size: var(--ds-body-xs-font-size);
+  color: var(--ds-color-neutral-text-subtle);
+  font-weight: var(--ds-font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--eyebrow-letter-spacing);
+  margin-bottom: var(--ds-size-1);
+}
+
+.panelTitle {
+  font-size: var(--ds-heading-xs-font-size);
+  font-weight: var(--ds-font-weight-semibold);
+  margin-bottom: var(--ds-size-4);
+  line-height: var(--ds-line-height-sm);
+}
+
+.statBlock {
+  margin-top: var(--ds-size-4);
+}
+
+.statSpacer {
+  margin-top: var(--ds-size-2);
+}
+
+.statLabel {
+  font-size: var(--ds-body-xs-font-size);
+  color: var(--ds-color-neutral-text-subtle);
+  font-weight: var(--ds-font-weight-medium);
+}
+
+.statValue {
+  font-size: var(--ds-body-lg-font-size);
+  font-weight: var(--ds-font-weight-semibold);
+}
+
+.detailLink {
+  display: inline-block;
+  margin-top: var(--ds-size-5);
+  color: var(--ds-color-accent-base-default);
+  font-weight: var(--ds-font-weight-medium);
+  text-decoration: none;
+  font-size: var(--ds-body-sm-font-size);
+}
+
+.detailLink:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+  .panel {
+    position: static;
+    min-height: auto;
+  }
+}

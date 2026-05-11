@@ -7,6 +7,7 @@ import { Tag } from "rk-designsystem";
 
 import type { ActivityConfig } from "@/lib/activities";
 import type { CoverageRow } from "@/lib/coverage";
+import styles from "./MunicipalityMap.module.css";
 
 export type KommunePath = { knr: string; name: string; d: string };
 
@@ -59,19 +60,12 @@ export function MunicipalityMap({
   const hoveredName = hovered ? paths.find((p) => p.knr === hovered)?.name : null;
 
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "minmax(0, 1fr) 280px",
-        gap: "1.5rem",
-        alignItems: "start",
-      }}
-    >
+    <div className={styles.layout}>
       <div>
         <svg
           viewBox={`0 0 ${viewBoxWidth} ${viewBoxHeight}`}
           width="100%"
-          style={{ height: "auto", display: "block" }}
+          className={styles.svg}
           role="img"
           aria-label={`Kart over Norge med kommuner farget etter dekningsgap for ${config.label}`}
           onMouseLeave={() => setHovered(null)}
@@ -93,6 +87,7 @@ export function MunicipalityMap({
                   tabIndex={0}
                   role="link"
                   aria-label={`${ariaLabel(name, cov, config)}. Klikk for detaljer.`}
+                  className={styles.path}
                   onMouseEnter={() => setHovered(knr)}
                   onFocus={() => setHovered(knr)}
                   onBlur={() => setHovered(null)}
@@ -102,11 +97,6 @@ export function MunicipalityMap({
                       e.preventDefault();
                       router.push(`/kommune/${knr}`);
                     }
-                  }}
-                  style={{
-                    cursor: "pointer",
-                    outline: "none",
-                    transition: "fill-opacity 150ms",
                   }}
                 />
               );
@@ -143,57 +133,24 @@ function HoverPanel({
   config: ActivityConfig;
 }) {
   return (
-    <aside
-      style={{
-        position: "sticky",
-        top: "1rem",
-        padding: "1.25rem",
-        background: "#fff",
-        border: "1px solid #e5e5e5",
-        borderRadius: 8,
-        minHeight: 280,
-      }}
-      aria-live="polite"
-    >
+    <aside className={styles.panel} aria-live="polite">
       {!name || !cov ? (
-        <div style={{ color: "#999", fontSize: "0.95rem", lineHeight: 1.5 }}>
-          <div style={{ marginBottom: "0.5rem", fontWeight: 600, color: "#555" }}>
-            Velg en kommune
-          </div>
+        <div className={styles.panelEmpty}>
+          <div className={styles.panelEmptyTitle}>Velg en kommune</div>
           Hold musa over kartet, eller tab deg gjennom kommunene med tastatur,
           for å se detaljer.
         </div>
       ) : (
         <>
-          <div
-            style={{
-              fontSize: "0.75rem",
-              color: "#777",
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-              marginBottom: "0.25rem",
-            }}
-          >
-            {cov.fylkesnavn}
-          </div>
-          <div
-            style={{
-              fontSize: "1.5rem",
-              fontWeight: 700,
-              marginBottom: "1rem",
-              lineHeight: 1.2,
-            }}
-          >
-            {name}
-          </div>
+          <div className={styles.panelEyebrow}>{cov.fylkesnavn}</div>
+          <div className={styles.panelTitle}>{name}</div>
 
           <Stat
             label={config.needLabelLong}
             value={cov.needValue.toLocaleString("nb-NO")}
           />
 
-          <div style={{ marginTop: "1rem" }}>
+          <div className={styles.statBlock}>
             {cov.no_coverage ? (
               <Tag data-color="danger">Ingen {config.label.toLowerCase()}</Tag>
             ) : (
@@ -202,7 +159,7 @@ function HoverPanel({
                   label={`${config.label}-grupper`}
                   value={cov.antall_grupper.toString()}
                 />
-                <div style={{ marginTop: "0.5rem" }}>
+                <div className={styles.statSpacer}>
                   <Stat
                     label={`${config.needLabel} per gruppe`}
                     value={`≈ ${Math.round(cov.need_per_service ?? 0).toLocaleString("nb-NO")}`}
@@ -214,14 +171,7 @@ function HoverPanel({
 
           <Link
             href={`/kommune/${cov.kommunenummer}`}
-            style={{
-              display: "inline-block",
-              marginTop: "1.25rem",
-              color: "var(--ds-color-accent-base-default, #D7282F)",
-              fontWeight: 600,
-              textDecoration: "none",
-              fontSize: "0.95rem",
-            }}
+            className={styles.detailLink}
           >
             Se detaljer →
           </Link>
@@ -234,10 +184,8 @@ function HoverPanel({
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div style={{ fontSize: "0.75rem", color: "#777", fontWeight: 500 }}>
-        {label}
-      </div>
-      <div style={{ fontSize: "1.25rem", fontWeight: 600 }}>{value}</div>
+      <div className={styles.statLabel}>{label}</div>
+      <div className={styles.statValue}>{value}</div>
     </div>
   );
 }
@@ -250,30 +198,12 @@ function MapLegend({ label }: { label: string }) {
     { color: "#FDEDEE", label: "God dekning" },
   ];
   return (
-    <div
-      style={{
-        marginTop: "1rem",
-        display: "flex",
-        flexWrap: "wrap",
-        gap: "0.75rem",
-        fontSize: "0.8125rem",
-        color: "#555",
-      }}
-    >
+    <div className={styles.legend}>
       {items.map((it) => (
-        <div
-          key={it.label}
-          style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}
-        >
+        <div key={it.label} className={styles.legendItem}>
           <span
-            style={{
-              width: 14,
-              height: 14,
-              background: it.color,
-              border: "1px solid #ccc",
-              display: "inline-block",
-              borderRadius: 2,
-            }}
+            className={styles.legendSwatch}
+            style={{ background: it.color }}
           />
           {it.label}
         </div>

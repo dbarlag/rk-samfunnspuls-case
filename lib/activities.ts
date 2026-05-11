@@ -25,7 +25,11 @@ export type ActivityName = (typeof ACTIVITIES)[keyof typeof ACTIVITIES];
 // den befolkningen den retter seg mot. Coverage-beregningen bruker
 // `needAccessor` for å hente riktig tall fra Municipality.
 
-export type ActivityKey = "besokstjeneste" | "leksehjelp" | "norsktrening";
+export type ActivityKey =
+  | "besokstjeneste"
+  | "leksehjelp"
+  | "norsktrening"
+  | "flyktningguide";
 
 export type ActivityConfig = {
   key: ActivityKey;
@@ -64,6 +68,15 @@ export const ACTIVITY_CONFIGS: Record<ActivityKey, ActivityConfig> = {
     needLabelLong: "Innvandrere bosatt i kommunen",
     needSource: "SSB tabell 09817",
     needAccessor: (m) => m.antall_innvandrere ?? 0,
+  },
+  flyktningguide: {
+    key: "flyktningguide",
+    activityName: ACTIVITIES.FLYKTNINGGUIDE,
+    label: "Flyktningguide",
+    needLabel: "flyktninger",
+    needLabelLong: "Innvandrere fra klassiske flyktningland",
+    needSource: "SSB 09817 (proxy: 13 land)",
+    needAccessor: (m) => m.antall_flyktninger ?? 0,
   },
 };
 

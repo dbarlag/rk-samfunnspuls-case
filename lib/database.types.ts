@@ -14,6 +14,7 @@ export type Municipality = {
   // Multi-aktivitet behov-metrikker (kommer fra ekstra ETL):
   antall_barn_6_16: number | null;       // SSB 07459 sum 6-16 (Leksehjelp-behov)
   antall_innvandrere: number | null;      // SSB 09817 (Norsktrening-behov)
+  antall_flyktninger: number | null;      // SSB 05183 (Flyktningguide-behov)
   data_year: number | null;
   updated_at: string;
 };
@@ -32,6 +33,7 @@ export type MunicipalityInsert = {
   antall_80plus_alene?: number | null;
   antall_barn_6_16?: number | null;
   antall_innvandrere?: number | null;
+  antall_flyktninger?: number | null;
   total_befolkning?: number | null;
   data_year?: number | null;
 };

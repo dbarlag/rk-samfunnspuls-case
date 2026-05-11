@@ -1,8 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { Card, Heading, Table, Tag } from "rk-designsystem";
+import React, { useMemo, useState } from "react";
+import {
+  Button,
+  Card,
+  Checkbox,
+  Heading,
+  Paragraph,
+  Search,
+  Select,
+  Table,
+  Tag,
+  ToggleGroup,
+} from "rk-designsystem";
 
 import {
   ACTIVITY_CONFIGS,
@@ -14,6 +25,7 @@ import {
   type KommunePath,
   MunicipalityMap,
 } from "./MunicipalityMap";
+import styles from "./HomeView.module.css";
 
 type Props = {
   coverageByActivity: Record<ActivityKey, CoverageRow[]>;
@@ -36,7 +48,6 @@ export function HomeView({
   const config = ACTIVITY_CONFIGS[activity];
   const coverage = coverageByActivity[activity];
 
-  // Sorterte unike fylker for dropdown
   const fylker = useMemo(
     () =>
       Array.from(
@@ -45,7 +56,6 @@ export function HomeView({
     [coverage],
   );
 
-  // Filtrert datasett basert på søk/fylke/checkbox
   const filteredKnr = useMemo(() => {
     const s = search.toLowerCase().trim();
     const matched = coverage.filter((c) => {
@@ -64,39 +74,35 @@ export function HomeView({
   const totalNeed = coverage.reduce((sum, c) => sum + c.needValue, 0);
 
   return (
-    <main
-      style={{
-        maxWidth: 1300,
-        margin: "0 auto",
-        padding: "2rem 1.5rem 4rem",
-      }}
-    >
-      <header style={{ marginBottom: "2.5rem" }}>
-        <p
-          style={{
-            color: "var(--ds-color-accent-base-default, #D7282F)",
-            fontWeight: 600,
-            letterSpacing: "0.05em",
-            textTransform: "uppercase",
-            fontSize: "0.875rem",
-            marginBottom: "0.5rem",
-          }}
-        >
-          Røde Kors Samfunnspuls
-        </p>
-        <div style={{ marginBottom: "0.75rem" }}>
+    <main className={styles.page}>
+      <header className={styles.header}>
+        <div className={styles.eyebrow}>Røde Kors Samfunnspuls</div>
+        <div className={styles.headingSpacer}>
           <Heading level={1}>
             Hvor mangler vi {config.label.toLowerCase()}?
           </Heading>
         </div>
-        <p style={{ maxWidth: 720, fontSize: "1.05rem", color: "#555" }}>
+        <Paragraph data-size="lg" className={styles.lede}>
           Datadrevet beslutningsstøtte for fagansvarlige. Kombinerer SSB-data
-          om {config.needLabelLong.toLowerCase()} med Røde Kors&rsquo; egen
+          om {config.needLabelLong.toLowerCase()} med Røde Kors’ egen
           oversikt over aktive lokalforeninger og distrikter.
-        </p>
+        </Paragraph>
       </header>
 
-      <ActivityToggle current={activity} onChange={setActivity} />
+      <ToggleGroup
+        value={activity}
+        onChange={(v: string) => setActivity(v as ActivityKey)}
+        data-toggle-group="Velg aktivitet"
+      >
+        {ACTIVITY_KEYS.map((key) => {
+          const cfg = ACTIVITY_CONFIGS[key];
+          return (
+            <ToggleGroup.Item key={key} value={key}>
+              {cfg.label}
+            </ToggleGroup.Item>
+          );
+        })}
+      </ToggleGroup>
 
       <FilterBar
         search={search}
@@ -110,18 +116,11 @@ export function HomeView({
         totalCount={coverage.length}
       />
 
-      <section
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: "1rem",
-          marginBottom: "2.5rem",
-        }}
-      >
-        <StatCard label="Kommuner totalt" value={coverage.length} />
+      <section className={styles.statGrid}>
+        <StatCard label="Kommuner totalt" value={coverage.length.toString()} />
         <StatCard
           label={`Uten ${config.label.toLowerCase()}`}
-          value={utenDekning}
+          value={utenDekning.toString()}
           highlight
         />
         <StatCard
@@ -130,22 +129,15 @@ export function HomeView({
         />
       </section>
 
-      <section style={{ marginBottom: "3rem" }}>
-        <div style={{ marginBottom: "1rem" }}>
-          <Heading level={2}>Norgeskart — interaktivt</Heading>
+      <section className={styles.mapSection}>
+        <div className={styles.sectionHeading}>
+          <Heading level={2} data-size="md">Norgeskart — interaktivt</Heading>
         </div>
-        <p style={{ color: "#777", marginBottom: "1.5rem" }}>
+        <Paragraph data-size="sm" className={styles.mapHelp}>
           Hold over en kommune for å se detaljer, eller bruk Tab for å
           navigere med tastatur. Klikk for full kommuneside.
-        </p>
-        <div
-          style={{
-            padding: "1.5rem",
-            background: "#fafafa",
-            border: "1px solid #e5e5e5",
-            borderRadius: 8,
-          }}
-        >
+        </Paragraph>
+        <div className={styles.mapFrame}>
           <MunicipalityMap
             paths={paths}
             coverage={coverage}
@@ -158,18 +150,11 @@ export function HomeView({
       </section>
 
       <section>
-        <div style={{ marginBottom: "1rem" }}>
-          <Heading level={2}>
+        <div className={styles.tableHeading}>
+          <Heading level={2} data-size="md">
             Topp 10 — størst dekningsgap
             {isFiltered && (
-              <span
-                style={{
-                  fontWeight: 400,
-                  fontSize: "1rem",
-                  color: "#777",
-                  marginLeft: "0.75rem",
-                }}
-              >
+              <span className={styles.tableHeadingMeta}>
                 (av {filteredCoverage.length} matchende)
               </span>
             )}
@@ -178,72 +163,61 @@ export function HomeView({
         {top10.length === 0 ? (
           <Card>
             <Card.Block>
-              <p style={{ color: "#777" }}>
+              <Paragraph data-size="sm">
                 Ingen kommuner matcher filtret. Prøv å fjerne søk eller
                 fylke-valg.
-              </p>
+              </Paragraph>
             </Card.Block>
           </Card>
         ) : (
-        <Table zebra hover border>
-          <Table.Head>
-            <Table.Row>
-              <Table.HeaderCell style={{ width: "3rem" }}>#</Table.HeaderCell>
-              <Table.HeaderCell>Kommune</Table.HeaderCell>
-              <Table.HeaderCell style={{ textAlign: "right" }}>
-                {config.needLabel}
-              </Table.HeaderCell>
-              <Table.HeaderCell>Dekning</Table.HeaderCell>
-            </Table.Row>
-          </Table.Head>
-          <Table.Body>
-            {top10.map((row, i) => (
-              <Table.Row key={row.kommunenummer}>
-                <Table.Cell style={{ color: "#888", fontWeight: 600 }}>
-                  {i + 1}
-                </Table.Cell>
-                <Table.Cell>
-                  <Link
-                    href={`/kommune/${row.kommunenummer}`}
-                    style={{
-                      color: "inherit",
-                      textDecoration: "none",
-                      display: "block",
-                    }}
-                  >
-                    <div
-                      style={{
-                        fontWeight: 600,
-                        color: "var(--ds-color-accent-base-default, #D7282F)",
-                      }}
-                    >
-                      {row.kommunenavn} →
-                    </div>
-                    <div style={{ color: "#777", fontSize: "0.875rem" }}>
-                      {row.fylkesnavn}
-                    </div>
-                  </Link>
-                </Table.Cell>
-                <Table.Cell style={{ textAlign: "right" }}>
-                  {row.needValue.toLocaleString("nb-NO")}
-                </Table.Cell>
-                <Table.Cell>
-                  {row.no_coverage ? (
-                    <Tag data-color="danger">Ingen dekning</Tag>
-                  ) : (
-                    <span style={{ fontSize: "0.875rem", color: "#555" }}>
-                      {row.antall_grupper} gruppe
-                      {row.antall_grupper !== 1 ? "r" : ""}{" "}
-                      <span style={{ color: "#888" }}>
-                        · ≈{Math.round(row.need_per_service ?? 0)} per gruppe
-                      </span>
-                    </span>
-                  )}
-                </Table.Cell>
+          <Table zebra hover border>
+            <Table.Head>
+              <Table.Row>
+                <Table.HeaderCell className={styles.rankCell}>#</Table.HeaderCell>
+                <Table.HeaderCell>Kommune</Table.HeaderCell>
+                <Table.HeaderCell className={styles.numericCell}>
+                  {config.needLabel}
+                </Table.HeaderCell>
+                <Table.HeaderCell>Dekning</Table.HeaderCell>
               </Table.Row>
-            ))}
-          </Table.Body>
-        </Table>
+            </Table.Head>
+            <Table.Body>
+              {top10.map((row, i) => (
+                <Table.Row key={row.kommunenummer}>
+                  <Table.Cell className={styles.rankCell}>{i + 1}</Table.Cell>
+                  <Table.Cell>
+                    <Link
+                      href={`/kommune/${row.kommunenummer}`}
+                      className={styles.kommuneLink}
+                    >
+                      <div className={styles.kommuneName}>
+                        {row.kommunenavn} →
+                      </div>
+                      <div className={styles.kommuneFylke}>
+                        {row.fylkesnavn}
+                      </div>
+                    </Link>
+                  </Table.Cell>
+                  <Table.Cell className={styles.numericCell}>
+                    {row.needValue.toLocaleString("nb-NO")}
+                  </Table.Cell>
+                  <Table.Cell>
+                    {row.no_coverage ? (
+                      <Tag data-color="danger">Ingen dekning</Tag>
+                    ) : (
+                      <span className={styles.coverageMeta}>
+                        {row.antall_grupper} gruppe
+                        {row.antall_grupper !== 1 ? "r" : ""}{" "}
+                        <span className={styles.coverageDim}>
+                          · ≈{Math.round(row.need_per_service ?? 0)} per gruppe
+                        </span>
+                      </span>
+                    )}
+                  </Table.Cell>
+                </Table.Row>
+              ))}
+            </Table.Body>
+          </Table>
         )}
       </section>
     </main>
@@ -271,164 +245,55 @@ function FilterBar({
   matchCount: number;
   totalCount: number;
 }) {
-  const isFiltered =
-    search !== "" || fylkeFilter !== "" || onlyUndekket;
+  const isFiltered = search !== "" || fylkeFilter !== "" || onlyUndekket;
   const reset = () => {
     setSearch("");
     setFylkeFilter("");
     setOnlyUndekket(false);
   };
   return (
-    <div
-      style={{
-        display: "flex",
-        flexWrap: "wrap",
-        gap: "0.75rem",
-        alignItems: "center",
-        marginBottom: "1.5rem",
-        padding: "0.75rem 1rem",
-        background: "#fafafa",
-        border: "1px solid #e5e5e5",
-        borderRadius: 8,
-      }}
-    >
-      <input
-        type="search"
-        placeholder="Søk kommune..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        style={{
-          padding: "0.5rem 0.75rem",
-          border: "1px solid #ccc",
-          borderRadius: 6,
-          fontSize: "0.95rem",
-          minWidth: 180,
-          fontFamily: "inherit",
-        }}
-        aria-label="Søk på kommune-navn"
-      />
-      <select
-        value={fylkeFilter}
-        onChange={(e) => setFylkeFilter(e.target.value)}
-        style={{
-          padding: "0.5rem 0.75rem",
-          border: "1px solid #ccc",
-          borderRadius: 6,
-          fontSize: "0.95rem",
-          fontFamily: "inherit",
-          background: "#fff",
-        }}
-        aria-label="Filtrer på fylke"
-      >
-        <option value="">Alle fylker</option>
-        {fylker.map((f) => (
-          <option key={f} value={f}>
-            {f}
-          </option>
-        ))}
-      </select>
-      <label
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "0.4rem",
-          fontSize: "0.95rem",
-          color: "#333",
-          cursor: "pointer",
-        }}
-      >
-        <input
-          type="checkbox"
-          checked={onlyUndekket}
-          onChange={(e) => setOnlyUndekket(e.target.checked)}
+    <div className={styles.filterBar}>
+      <Search>
+        <Search.Input
+          aria-label="Søk på kommune-navn"
+          placeholder="Søk kommune…"
+          value={search}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+            setSearch(e.target.value)
+          }
         />
-        Kun udekket
-      </label>
-      <div style={{ flex: 1 }} />
-      <span style={{ fontSize: "0.875rem", color: "#777" }}>
+        {search !== "" && <Search.Clear onClick={() => setSearch("")} />}
+      </Search>
+      <Select
+        aria-label="Filtrer på fylke"
+        value={fylkeFilter}
+        onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+          setFylkeFilter(e.target.value)
+        }
+      >
+        <Select.Option value="">Alle fylker</Select.Option>
+        {fylker.map((f) => (
+          <Select.Option key={f} value={f}>
+            {f}
+          </Select.Option>
+        ))}
+      </Select>
+      <Checkbox
+        label="Kun udekket"
+        checked={onlyUndekket}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+          setOnlyUndekket(e.target.checked)
+        }
+      />
+      <div className={styles.filterSpacer} />
+      <span className={styles.filterCount}>
         {matchCount} av {totalCount} kommuner
       </span>
       {isFiltered && (
-        <button
-          type="button"
-          onClick={reset}
-          style={{
-            padding: "0.5rem 0.75rem",
-            border: "1px solid #ccc",
-            borderRadius: 6,
-            background: "#fff",
-            fontSize: "0.875rem",
-            cursor: "pointer",
-            fontFamily: "inherit",
-            color: "#555",
-          }}
-        >
+        <Button variant="secondary" data-size="sm" onClick={reset}>
           Nullstill
-        </button>
+        </Button>
       )}
-    </div>
-  );
-}
-
-function ActivityToggle({
-  current,
-  onChange,
-}: {
-  current: ActivityKey;
-  onChange: (k: ActivityKey) => void;
-}) {
-  return (
-    <div
-      role="tablist"
-      aria-label="Velg Røde Kors-aktivitet"
-      style={{
-        display: "flex",
-        gap: "0.5rem",
-        marginBottom: "1.5rem",
-        padding: "0.4rem",
-        background: "#f5f5f5",
-        borderRadius: 8,
-        width: "fit-content",
-      }}
-    >
-      {ACTIVITY_KEYS.map((key) => {
-        const cfg = ACTIVITY_CONFIGS[key];
-        const isActive = key === current;
-        return (
-          <button
-            key={key}
-            role="tab"
-            aria-selected={isActive}
-            onClick={() => onChange(key)}
-            style={{
-              padding: "0.5rem 1rem",
-              border: "none",
-              borderRadius: 6,
-              background: isActive ? "#fff" : "transparent",
-              color: isActive
-                ? "var(--ds-color-accent-base-default, #D7282F)"
-                : "#555",
-              fontWeight: 600,
-              cursor: "pointer",
-              fontSize: "0.95rem",
-              boxShadow: isActive ? "0 1px 3px rgba(0,0,0,0.08)" : "none",
-              fontFamily: "inherit",
-            }}
-          >
-            {cfg.label}
-            <span
-              style={{
-                color: "#999",
-                fontWeight: 400,
-                marginLeft: "0.5rem",
-                fontSize: "0.85rem",
-              }}
-            >
-              · {cfg.needLabel}
-            </span>
-          </button>
-        );
-      })}
     </div>
   );
 }
@@ -439,35 +304,21 @@ function StatCard({
   highlight,
 }: {
   label: string;
-  value: number | string;
+  value: string;
   highlight?: boolean;
 }) {
   return (
-    <Card variant={highlight ? "tinted" : "default"}>
+    <Card
+      variant={highlight ? "tinted" : "default"}
+      data-color={highlight ? "accent" : undefined}
+    >
       <Card.Block>
         <div
-          style={{
-            fontSize: "0.8125rem",
-            fontWeight: 600,
-            textTransform: "uppercase",
-            letterSpacing: "0.05em",
-            color: highlight
-              ? "var(--ds-color-accent-base-default, #D7282F)"
-              : "#777",
-            marginBottom: "0.5rem",
-          }}
+          className={highlight ? styles.statLabelHighlight : styles.statLabel}
         >
           {label}
         </div>
-        <div
-          style={{
-            fontSize: "2rem",
-            fontWeight: 700,
-            color: highlight
-              ? "var(--ds-color-accent-base-default, #D7282F)"
-              : "inherit",
-          }}
-        >
+        <div className={highlight ? styles.statValueHighlight : styles.statValue}>
           {value}
         </div>
       </Card.Block>

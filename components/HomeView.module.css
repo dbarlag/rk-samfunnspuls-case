@@ -1,0 +1,164 @@
+/* Lokale konstanter for verdier som ikke er dekket av rk-design-tokens.
+   Holdes på ett sted så de er enkle å oppdatere konsekvent. */
+.page {
+  --eyebrow-letter-spacing: 0.05em; /* uppercase-tracking — ikke dekket av --ds-letter-spacing-* */
+
+  max-width: 1300px;
+  margin: 0 auto;
+  padding: var(--ds-size-8) var(--ds-size-6) var(--ds-size-12);
+}
+
+.header {
+  margin-bottom: var(--ds-size-10);
+}
+
+.eyebrow {
+  color: var(--ds-color-accent-base-default);
+  font-weight: var(--ds-font-weight-medium);
+  letter-spacing: var(--eyebrow-letter-spacing);
+  text-transform: uppercase;
+  font-size: var(--ds-body-xs-font-size);
+  margin-bottom: var(--ds-size-2);
+}
+
+.headingSpacer {
+  margin-bottom: var(--ds-size-3);
+}
+
+.lede {
+  max-width: 720px;
+}
+
+.filterBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-size-3);
+  align-items: center;
+  margin-bottom: var(--ds-size-6);
+  padding: var(--ds-size-3) var(--ds-size-4);
+  background: var(--ds-color-neutral-background-tinted);
+  border: 1px solid var(--ds-color-neutral-border-subtle);
+  border-radius: var(--ds-border-radius-md);
+}
+
+.filterSpacer {
+  flex: 1;
+}
+
+.filterCount {
+  font-size: var(--ds-body-xs-font-size);
+  color: var(--ds-color-neutral-text-subtle);
+}
+
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--ds-size-4);
+  margin-bottom: var(--ds-size-10);
+}
+
+.statLabel {
+  color: var(--ds-color-neutral-text-subtle);
+  font-weight: var(--ds-font-weight-medium);
+  letter-spacing: var(--eyebrow-letter-spacing);
+  text-transform: uppercase;
+  font-size: var(--ds-body-xs-font-size);
+  margin-bottom: var(--ds-size-2);
+}
+
+.statLabelHighlight {
+  color: var(--ds-color-accent-base-default);
+  font-weight: var(--ds-font-weight-medium);
+  letter-spacing: var(--eyebrow-letter-spacing);
+  text-transform: uppercase;
+  font-size: var(--ds-body-xs-font-size);
+  margin-bottom: var(--ds-size-2);
+}
+
+.statValue {
+  font-size: var(--ds-heading-md-font-size);
+  font-weight: var(--ds-font-weight-semibold);
+  line-height: var(--ds-line-height-sm);
+}
+
+.statValueHighlight {
+  font-size: var(--ds-heading-md-font-size);
+  font-weight: var(--ds-font-weight-semibold);
+  line-height: var(--ds-line-height-sm);
+  color: var(--ds-color-accent-base-default);
+}
+
+.mapSection {
+  margin-bottom: var(--ds-size-12);
+}
+
+.sectionHeading {
+  margin-bottom: var(--ds-size-4);
+}
+
+.mapHelp {
+  color: var(--ds-color-neutral-text-subtle);
+  margin-bottom: var(--ds-size-6);
+}
+
+.mapFrame {
+  padding: var(--ds-size-6);
+  background: var(--ds-color-neutral-background-tinted);
+  border: 1px solid var(--ds-color-neutral-border-subtle);
+  border-radius: var(--ds-border-radius-md);
+}
+
+.tableHeading {
+  margin-bottom: var(--ds-size-4);
+}
+
+.tableHeadingMeta {
+  font-weight: var(--ds-font-weight-regular);
+  font-size: var(--ds-body-md-font-size);
+  color: var(--ds-color-neutral-text-subtle);
+  margin-left: var(--ds-size-3);
+}
+
+.rankCell {
+  color: var(--ds-color-neutral-text-subtle);
+  font-weight: var(--ds-font-weight-medium);
+  width: 3rem;
+}
+
+.kommuneLink {
+  color: inherit;
+  text-decoration: none;
+  display: block;
+}
+
+.kommuneName {
+  font-weight: var(--ds-font-weight-medium);
+  color: var(--ds-color-accent-base-default);
+}
+
+.kommuneFylke {
+  color: var(--ds-color-neutral-text-subtle);
+  font-size: var(--ds-body-xs-font-size);
+}
+
+.numericCell {
+  text-align: right;
+}
+
+.coverageMeta {
+  font-size: var(--ds-body-xs-font-size);
+  color: var(--ds-color-neutral-text-default);
+}
+
+.coverageDim {
+  color: var(--ds-color-neutral-text-subtle);
+}
+
+@media (max-width: 720px) {
+  .statGrid {
+    grid-template-columns: 1fr;
+  }
+  .page {
+    padding: var(--ds-size-4) var(--ds-size-3) var(--ds-size-8);
+  }
+}

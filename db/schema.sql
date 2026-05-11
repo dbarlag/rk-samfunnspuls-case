@@ -34,6 +34,8 @@ ALTER TABLE municipalities
   ADD COLUMN IF NOT EXISTS antall_barn_6_16 integer;        -- fra SSB 07459 (Leksehjelp-behov)
 ALTER TABLE municipalities
   ADD COLUMN IF NOT EXISTS antall_innvandrere integer;      -- fra SSB 09817 (Norsktrening-behov)
+ALTER TABLE municipalities
+  ADD COLUMN IF NOT EXISTS antall_flyktninger integer;      -- fra SSB 05183 (Flyktningguide-behov)
 
 -- ----------------------------------------------------------------
 -- 2. Røde Kors lokalforeninger (kun aktive Lokalforening-typer)

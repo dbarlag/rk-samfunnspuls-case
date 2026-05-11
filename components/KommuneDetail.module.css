@@ -1,0 +1,192 @@
+/* Lokale konstanter for verdier som ikke er dekket av rk-design-tokens. */
+.page {
+  --eyebrow-letter-spacing: 0.05em; /* uppercase-tracking — ikke dekket av --ds-letter-spacing-* */
+
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: var(--ds-size-8) var(--ds-size-6) var(--ds-size-12);
+}
+
+.nav {
+  margin-bottom: var(--ds-size-6);
+}
+
+.backLink {
+  color: var(--ds-color-neutral-text-subtle);
+  text-decoration: none;
+  font-size: var(--ds-body-sm-font-size);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--ds-size-2);
+}
+
+.backLink:hover {
+  color: var(--ds-color-neutral-text-default);
+}
+
+.header {
+  margin-bottom: var(--ds-size-10);
+}
+
+.eyebrow {
+  color: var(--ds-color-neutral-text-subtle);
+  font-weight: var(--ds-font-weight-medium);
+  letter-spacing: var(--eyebrow-letter-spacing);
+  text-transform: uppercase;
+  font-size: var(--ds-body-xs-font-size);
+  margin-bottom: var(--ds-size-2);
+}
+
+.section {
+  margin-bottom: var(--ds-size-10);
+}
+
+.sectionHeading {
+  margin-bottom: var(--ds-size-4);
+}
+
+.cardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--ds-size-4);
+}
+
+.branchList {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--ds-size-4);
+}
+
+/* StatCard */
+.statLabel {
+  font-size: var(--ds-body-xs-font-size);
+  color: var(--ds-color-neutral-text-subtle);
+  font-weight: var(--ds-font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--eyebrow-letter-spacing);
+  margin-bottom: var(--ds-size-2);
+  /* Reserverer plass så alle kortene aligner uavhengig av label-lengde. */
+  min-height: var(--ds-size-9);
+}
+
+.statValue {
+  font-size: var(--ds-heading-md-font-size);
+  font-weight: var(--ds-font-weight-semibold);
+  line-height: var(--ds-line-height-sm);
+}
+
+.statSource {
+  margin-top: var(--ds-size-2);
+  font-size: var(--ds-body-xs-font-size);
+  color: var(--ds-color-neutral-text-subtle);
+}
+
+/* CoverageCard */
+.coverageLabel {
+  font-size: var(--ds-body-xs-font-size);
+  color: var(--ds-color-neutral-text-subtle);
+  font-weight: var(--ds-font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--eyebrow-letter-spacing);
+  margin-bottom: var(--ds-size-3);
+}
+
+.coverageLabelDanger {
+  font-size: var(--ds-body-xs-font-size);
+  color: var(--ds-color-accent-base-default);
+  font-weight: var(--ds-font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--eyebrow-letter-spacing);
+  margin-bottom: var(--ds-size-3);
+}
+
+.coverageValue {
+  font-size: var(--ds-heading-md-font-size);
+  font-weight: var(--ds-font-weight-semibold);
+  line-height: var(--ds-line-height-sm);
+}
+
+.coverageUnit {
+  color: var(--ds-color-neutral-text-subtle);
+  font-size: var(--ds-body-xs-font-size);
+}
+
+.coverageDescription {
+  margin-top: var(--ds-size-3);
+  font-size: var(--ds-body-xs-font-size);
+  color: var(--ds-color-neutral-text-default);
+}
+
+/* BranchCard */
+.branchHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--ds-size-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--ds-size-3);
+}
+
+.branchName {
+  font-size: var(--ds-body-md-font-size);
+  font-weight: var(--ds-font-weight-medium);
+}
+
+.branchParent {
+  color: var(--ds-color-neutral-text-subtle);
+  font-size: var(--ds-body-xs-font-size);
+}
+
+.branchActivities {
+  margin-bottom: var(--ds-size-3);
+}
+
+.activitiesLabel {
+  font-size: var(--ds-body-xs-font-size);
+  color: var(--ds-color-neutral-text-subtle);
+  font-weight: var(--ds-font-weight-medium);
+  text-transform: uppercase;
+  letter-spacing: var(--eyebrow-letter-spacing);
+  margin-bottom: var(--ds-size-2);
+}
+
+.activitiesTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ds-size-2);
+}
+
+.contactRow {
+  display: flex;
+  gap: var(--ds-size-5);
+  flex-wrap: wrap;
+  font-size: var(--ds-body-xs-font-size);
+  color: var(--ds-color-neutral-text-default);
+}
+
+.contactLink {
+  color: var(--ds-color-neutral-text-default);
+  text-decoration: none;
+}
+
+.contactLink:hover {
+  text-decoration: underline;
+}
+
+.webLink {
+  color: var(--ds-color-accent-base-default);
+  text-decoration: none;
+}
+
+.webLink:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding: var(--ds-size-4) var(--ds-size-3) var(--ds-size-8);
+  }
+  .branchHeader {
+    flex-direction: column;
+  }
+}
