@@ -6,21 +6,40 @@ import { getData } from "@/lib/data";
 /**
  * GET /api/coverage
  *
- * Eksponerer dekningsgap-listen som et JSON-API.
+ * Uten activity-param: returnerer coverage for ALLE aktiviteter som
+ * `{ activityKey: rows[] }`. Brukes av forsiden som trenger alle 4
+ * for å mate kart, tabell og toggle.
  *
- * Query params:
- *   - activity=<key>         besokstjeneste | leksehjelp | norsktrening
- *                            (default: besokstjeneste)
+ * Med activity=<key>: returnerer kun den valgte aktiviteten som array.
+ * Da gjelder også filter-params:
  *   - fylke=<navn>           filter på fylkesnavn
- *   - only_undekket=true     kun kommuner uten dekning for valgt aktivitet
- *   - limit=<n>              antall rader (default alle)
+ *   - only_undekket=true     kun kommuner uten dekning
+ *   - limit=<n>              antall rader
  */
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
-  const activityParam = (searchParams.get("activity") ??
-    "besokstjeneste") as ActivityKey;
+  const activityParam = searchParams.get("activity");
+  const { coverageByActivity } = await getData();
 
-  if (!ACTIVITY_KEYS.includes(activityParam)) {
+  if (!activityParam) {
+    return Response.json(
+      {
+        data: coverageByActivity,
+        meta: {
+          activities: ACTIVITY_KEYS,
+          data_year: 2026,
+          fetched_at: new Date().toISOString(),
+        },
+      },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+        },
+      },
+    );
+  }
+
+  if (!ACTIVITY_KEYS.includes(activityParam as ActivityKey)) {
     return Response.json(
       {
         error: `Invalid activity. Must be one of: ${ACTIVITY_KEYS.join(", ")}`,
@@ -29,8 +48,7 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const { coverageByActivity } = await getData();
-  let rows = coverageByActivity[activityParam];
+  let rows = coverageByActivity[activityParam as ActivityKey];
 
   const fylke = searchParams.get("fylke");
   const onlyUndekket = searchParams.get("only_undekket") === "true";

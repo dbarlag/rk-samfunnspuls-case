@@ -1,18 +1,28 @@
 import { notFound } from "next/navigation";
 
 import { KommuneDetail } from "@/components/KommuneDetail";
-import { ACTIVITY_KEYS, type ActivityKey } from "@/lib/activities";
-import {
-  computeNationalAverages,
-  findRank,
-  type CoverageRow,
-  type NationalAverage,
-} from "@/lib/coverage";
-import { getData } from "@/lib/data";
+import { type ActivityKey } from "@/lib/activities";
+import { apiFetch } from "@/lib/api-client";
+import { type CoverageRow, type NationalAverage } from "@/lib/coverage";
+import { type Branch, type Municipality } from "@/lib/database.types";
+
+type KommunerListResponse = {
+  data: Array<{ kommunenummer: string }>;
+};
+
+type KommuneDetailResponse = {
+  data: {
+    kommune: Municipality;
+    coverageByActivity: Record<ActivityKey, CoverageRow>;
+    nationalAverages: Record<ActivityKey, NationalAverage>;
+    ranks: Record<ActivityKey, number>;
+    branches: Array<{ branch: Branch; activities: string[] }>;
+  };
+};
 
 export async function generateStaticParams() {
-  const { municipalities } = await getData();
-  return municipalities.map((m) => ({ knr: m.kommunenummer }));
+  const res = await apiFetch<KommunerListResponse>("/api/kommuner");
+  return res.data.map((k) => ({ knr: k.kommunenummer }));
 }
 
 export default async function KommunePage({
@@ -21,46 +31,21 @@ export default async function KommunePage({
   params: Promise<{ knr: string }>;
 }) {
   const { knr } = await params;
-  const { municipalities, branches, activities, coverageByActivity } =
-    await getData();
 
-  const kommune = municipalities.find((m) => m.kommunenummer === knr);
-  if (!kommune) notFound();
-
-  const kommuneCoverage = {} as Record<ActivityKey, CoverageRow>;
-  const nationalAverages = {} as Record<ActivityKey, NationalAverage>;
-  const ranks = {} as Record<ActivityKey, number>;
-
-  for (const key of ACTIVITY_KEYS) {
-    const fullCoverage = coverageByActivity[key];
-    const row = fullCoverage.find((c) => c.kommunenummer === knr);
-    if (!row) notFound();
-    kommuneCoverage[key] = row;
-    nationalAverages[key] = computeNationalAverages(fullCoverage);
-    ranks[key] = findRank(fullCoverage, knr) ?? 0;
+  try {
+    const { data } = await apiFetch<KommuneDetailResponse>(
+      `/api/kommune/${knr}`,
+    );
+    return (
+      <KommuneDetail
+        kommune={data.kommune}
+        coverageByActivity={data.coverageByActivity}
+        nationalAverages={data.nationalAverages}
+        ranks={data.ranks}
+        branches={data.branches}
+      />
+    );
+  } catch {
+    notFound();
   }
-
-  const kommuneBranches = branches
-    .filter((b) => b.kommunenummer === knr)
-    .map((branch) => ({
-      branch,
-      activities: Array.from(
-        new Set(
-          activities
-            .filter((a) => a.branch_id === branch.branch_id)
-            .map((a) => a.activity_name),
-        ),
-      ).sort(),
-    }))
-    .sort((a, b) => a.branch.name.localeCompare(b.branch.name, "nb"));
-
-  return (
-    <KommuneDetail
-      kommune={kommune}
-      coverageByActivity={kommuneCoverage}
-      nationalAverages={nationalAverages}
-      ranks={ranks}
-      branches={kommuneBranches}
-    />
-  );
 }
