@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Card, Heading, Table, Tag } from "rk-designsystem";
 
 import {
@@ -29,10 +29,37 @@ export function HomeView({
   viewBoxHeight,
 }: Props) {
   const [activity, setActivity] = useState<ActivityKey>("besokstjeneste");
+  const [search, setSearch] = useState("");
+  const [fylkeFilter, setFylkeFilter] = useState("");
+  const [onlyUndekket, setOnlyUndekket] = useState(false);
+
   const config = ACTIVITY_CONFIGS[activity];
   const coverage = coverageByActivity[activity];
 
-  const top10 = coverage.slice(0, 10);
+  // Sorterte unike fylker for dropdown
+  const fylker = useMemo(
+    () =>
+      Array.from(
+        new Set(coverage.map((c) => c.fylkesnavn).filter((f): f is string => !!f)),
+      ).sort((a, b) => a.localeCompare(b, "nb")),
+    [coverage],
+  );
+
+  // Filtrert datasett basert på søk/fylke/checkbox
+  const filteredKnr = useMemo(() => {
+    const s = search.toLowerCase().trim();
+    const matched = coverage.filter((c) => {
+      if (s && !c.kommunenavn.toLowerCase().includes(s)) return false;
+      if (fylkeFilter && c.fylkesnavn !== fylkeFilter) return false;
+      if (onlyUndekket && !c.no_coverage) return false;
+      return true;
+    });
+    return new Set(matched.map((c) => c.kommunenummer));
+  }, [coverage, search, fylkeFilter, onlyUndekket]);
+
+  const filteredCoverage = coverage.filter((c) => filteredKnr.has(c.kommunenummer));
+  const isFiltered = filteredCoverage.length !== coverage.length;
+  const top10 = filteredCoverage.slice(0, 10);
   const utenDekning = coverage.filter((c) => c.no_coverage).length;
   const totalNeed = coverage.reduce((sum, c) => sum + c.needValue, 0);
 
@@ -70,6 +97,18 @@ export function HomeView({
       </header>
 
       <ActivityToggle current={activity} onChange={setActivity} />
+
+      <FilterBar
+        search={search}
+        setSearch={setSearch}
+        fylkeFilter={fylkeFilter}
+        setFylkeFilter={setFylkeFilter}
+        fylker={fylker}
+        onlyUndekket={onlyUndekket}
+        setOnlyUndekket={setOnlyUndekket}
+        matchCount={filteredCoverage.length}
+        totalCount={coverage.length}
+      />
 
       <section
         style={{
@@ -113,14 +152,39 @@ export function HomeView({
             config={config}
             viewBoxWidth={viewBoxWidth}
             viewBoxHeight={viewBoxHeight}
+            highlightedKnr={isFiltered ? filteredKnr : null}
           />
         </div>
       </section>
 
       <section>
         <div style={{ marginBottom: "1rem" }}>
-          <Heading level={2}>Topp 10 — størst dekningsgap</Heading>
+          <Heading level={2}>
+            Topp 10 — størst dekningsgap
+            {isFiltered && (
+              <span
+                style={{
+                  fontWeight: 400,
+                  fontSize: "1rem",
+                  color: "#777",
+                  marginLeft: "0.75rem",
+                }}
+              >
+                (av {filteredCoverage.length} matchende)
+              </span>
+            )}
+          </Heading>
         </div>
+        {top10.length === 0 ? (
+          <Card>
+            <Card.Block>
+              <p style={{ color: "#777" }}>
+                Ingen kommuner matcher filtret. Prøv å fjerne søk eller
+                fylke-valg.
+              </p>
+            </Card.Block>
+          </Card>
+        ) : (
         <Table zebra hover border>
           <Table.Head>
             <Table.Row>
@@ -180,8 +244,129 @@ export function HomeView({
             ))}
           </Table.Body>
         </Table>
+        )}
       </section>
     </main>
+  );
+}
+
+function FilterBar({
+  search,
+  setSearch,
+  fylkeFilter,
+  setFylkeFilter,
+  fylker,
+  onlyUndekket,
+  setOnlyUndekket,
+  matchCount,
+  totalCount,
+}: {
+  search: string;
+  setSearch: (s: string) => void;
+  fylkeFilter: string;
+  setFylkeFilter: (s: string) => void;
+  fylker: string[];
+  onlyUndekket: boolean;
+  setOnlyUndekket: (b: boolean) => void;
+  matchCount: number;
+  totalCount: number;
+}) {
+  const isFiltered =
+    search !== "" || fylkeFilter !== "" || onlyUndekket;
+  const reset = () => {
+    setSearch("");
+    setFylkeFilter("");
+    setOnlyUndekket(false);
+  };
+  return (
+    <div
+      style={{
+        display: "flex",
+        flexWrap: "wrap",
+        gap: "0.75rem",
+        alignItems: "center",
+        marginBottom: "1.5rem",
+        padding: "0.75rem 1rem",
+        background: "#fafafa",
+        border: "1px solid #e5e5e5",
+        borderRadius: 8,
+      }}
+    >
+      <input
+        type="search"
+        placeholder="Søk kommune..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        style={{
+          padding: "0.5rem 0.75rem",
+          border: "1px solid #ccc",
+          borderRadius: 6,
+          fontSize: "0.95rem",
+          minWidth: 180,
+          fontFamily: "inherit",
+        }}
+        aria-label="Søk på kommune-navn"
+      />
+      <select
+        value={fylkeFilter}
+        onChange={(e) => setFylkeFilter(e.target.value)}
+        style={{
+          padding: "0.5rem 0.75rem",
+          border: "1px solid #ccc",
+          borderRadius: 6,
+          fontSize: "0.95rem",
+          fontFamily: "inherit",
+          background: "#fff",
+        }}
+        aria-label="Filtrer på fylke"
+      >
+        <option value="">Alle fylker</option>
+        {fylker.map((f) => (
+          <option key={f} value={f}>
+            {f}
+          </option>
+        ))}
+      </select>
+      <label
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.4rem",
+          fontSize: "0.95rem",
+          color: "#333",
+          cursor: "pointer",
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={onlyUndekket}
+          onChange={(e) => setOnlyUndekket(e.target.checked)}
+        />
+        Kun udekket
+      </label>
+      <div style={{ flex: 1 }} />
+      <span style={{ fontSize: "0.875rem", color: "#777" }}>
+        {matchCount} av {totalCount} kommuner
+      </span>
+      {isFiltered && (
+        <button
+          type="button"
+          onClick={reset}
+          style={{
+            padding: "0.5rem 0.75rem",
+            border: "1px solid #ccc",
+            borderRadius: 6,
+            background: "#fff",
+            fontSize: "0.875rem",
+            cursor: "pointer",
+            fontFamily: "inherit",
+            color: "#555",
+          }}
+        >
+          Nullstill
+        </button>
+      )}
+    </div>
   );
 }
 

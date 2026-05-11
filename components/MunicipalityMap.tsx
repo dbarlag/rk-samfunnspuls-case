@@ -16,6 +16,8 @@ type Props = {
   config: ActivityConfig;
   viewBoxWidth: number;
   viewBoxHeight: number;
+  /** Hvis satt: kommuner i settet vises full opacity, andre dimmes ut. */
+  highlightedKnr?: Set<string> | null;
 };
 
 export function MunicipalityMap({
@@ -24,6 +26,7 @@ export function MunicipalityMap({
   config,
   viewBoxWidth,
   viewBoxHeight,
+  highlightedKnr,
 }: Props) {
   const router = useRouter();
   const [hovered, setHovered] = useState<string | null>(null);
@@ -77,11 +80,14 @@ export function MunicipalityMap({
             {paths.map(({ knr, name, d }) => {
               const cov = coverageByKnr.get(knr);
               const isHovered = hovered === knr;
+              const isDimmed =
+                highlightedKnr != null && !highlightedKnr.has(knr);
               return (
                 <path
                   key={knr}
                   d={d}
                   fill={colorFor(cov)}
+                  fillOpacity={isDimmed ? 0.15 : 1}
                   stroke={isHovered ? "#171717" : "#fff"}
                   strokeWidth={isHovered ? 1.5 : 0.4}
                   tabIndex={0}
@@ -100,6 +106,7 @@ export function MunicipalityMap({
                   style={{
                     cursor: "pointer",
                     outline: "none",
+                    transition: "fill-opacity 150ms",
                   }}
                 />
               );
