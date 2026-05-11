@@ -5,7 +5,7 @@ import { Footer } from "rk-designsystem";
 export function SiteFooter() {
   return (
     <Footer
-      data-color="primary"
+      data-color="neutral"
       hideNewsletter
       shortcutsTitle="Snarveier"
       shortcutsLinks={[{ label: "Forsiden", href: "/" }]}
